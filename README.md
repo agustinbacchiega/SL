@@ -13,7 +13,18 @@ App web instalable (PWA) que convierte tu entrenamiento diario en el Sistema de 
 - **Cambio de Clase** en nivel 40 → Nigromante. Al nivel 100 → título *Monarca de las Sombras*.
 - **Títulos**, que se consiguen con misiones secretas y dan bonus, **Tienda**, **Inventario**, **Mazmorras Instantáneas** (llaves) y **Misiones Secundarias** personalizadas.
 
-La dificultad se ajusta en *Sistema*: empezá con lo que puedas hacer y subila.
+## Evaluación del Jugador
+
+Al despertar, el Sistema hace una evaluación: sexo, edad, altura, peso actual y objetivo, meta (perder grasa, ganar músculo, recomposición, resistencia o salud), nivel de actividad, flexiones, carrera, lesiones, tiempo disponible y horario preferido. Con eso:
+
+- asigna la **misión diaria** a tu nivel (con menos carga en la zona lesionada) y la sube un 10% cada 7 misiones completadas, hasta llegar al estándar canon de 100 / 100 / 100 / 10 km;
+- define tus **estadísticas iniciales**;
+- estima IMC, calorías, proteína y agua, y agrega misiones secundarias acordes a tu objetivo;
+- ajusta la hora del recordatorio.
+
+En *Estado* podés registrar tu peso y ver el progreso hacia la meta. En *Sistema* podés repetir la evaluación o editar la dificultad a mano.
+
+La misión diaria trae además un **cronómetro de entrenamiento** y temporizadores de descanso (30, 60 y 90 s).
 
 ## Instalar
 

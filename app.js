@@ -40,6 +40,7 @@ const TITLES = {
   iron: { name: 'Voluntad Inquebrantable', desc: '7 misiones diarias seguidas.', bonus: 'XP diaria +15%' },
   demon: { name: 'Cazador de Demonios', desc: '30 misiones diarias seguidas.', bonus: 'Oro +50%' },
   beyond: { name: 'El que Superó sus Límites', desc: 'Superaste el doble de los objetivos diarios en un día.', bonus: 'XP de misiones secundarias +25%' },
+  body: { name: 'Cuerpo Despertado', desc: 'Alcanzaste tu peso objetivo.', bonus: 'Todas las estadísticas se sienten más ligeras (XP +10%)' },
   monarch: { name: 'Monarca de las Sombras', desc: 'Alcanzaste el nivel 100.', bonus: 'Toda la XP +25%' },
 };
 
@@ -61,6 +62,59 @@ const DUNGEONS = [
   { name: 'Castillo del Demonio', task: '30 min de entrenamiento libre sin pausa', xp: 500 },
 ];
 
+const QUESTIONS = [
+  { id: 'sex', q: 'Sexo biológico', hint: 'Solo se usa para estimar tu metabolismo.', opts: [['m', 'Hombre'], ['f', 'Mujer'], ['x', 'Prefiero no decir']] },
+  { id: 'age', q: 'Edad', num: [10, 100], unit: 'años' },
+  { id: 'height', q: 'Altura', num: [100, 230], unit: 'cm' },
+  { id: 'weight', q: 'Peso actual', num: [30, 300], unit: 'kg', step: 0.1 },
+  { id: 'goalWeight', q: 'Peso objetivo', num: [30, 300], unit: 'kg', step: 0.1 },
+  { id: 'goal', q: '¿Cuál es tu objetivo principal?', opts: [['fat', 'Perder grasa'], ['muscle', 'Ganar músculo'], ['recomp', 'Recomposición (perder grasa y ganar músculo)'], ['endurance', 'Mejorar resistencia'], ['health', 'Salud general']] },
+  { id: 'activity', q: '¿Cuánto ejercicio hacés actualmente?', opts: [['0', 'Nada / sedentario'], ['1', '1 – 2 días por semana'], ['2', '3 – 4 días por semana'], ['3', '5 o más días']] },
+  { id: 'pushups', q: '¿Cuántas flexiones seguidas podés hacer?', opts: [['0', '0 – 5'], ['1', '6 – 15'], ['2', '16 – 30'], ['3', 'Más de 30']] },
+  { id: 'run', q: '¿Cuánto podés correr sin parar?', opts: [['0', 'No corro'], ['1', 'Hasta 2 km'], ['2', '2 – 5 km'], ['3', 'Más de 5 km']] },
+  { id: 'injury', q: '¿Tenés alguna lesión o limitación?', opts: [['none', 'Ninguna'], ['knee', 'Rodillas'], ['back', 'Espalda'], ['shoulder', 'Hombros / muñecas']] },
+  { id: 'time', q: '¿Cuánto tiempo podés entrenar por día?', opts: [['15', '15 min'], ['30', '30 min'], ['45', '45 min'], ['60', '1 hora o más']] },
+  { id: 'when', q: '¿Cuándo preferís entrenar?', hint: 'El Sistema te avisará si la misión sigue incompleta.', opts: [['morning', 'Mañana'], ['afternoon', 'Tarde'], ['night', 'Noche']] },
+];
+
+const GOALS = { fat: 'Perder grasa', muscle: 'Ganar músculo', recomp: 'Recomposición', endurance: 'Resistencia', health: 'Salud general' };
+const CANON = { pushups: 100, situps: 100, squats: 100, run: 10 };
+
+function computePlan(a) {
+  const w = +a.weight, h = +a.height, age = +a.age;
+  const push = +a.pushups, run = +a.run, act = +a.activity;
+  const reps = [20, 40, 60, 100][push];
+  const tf = { 15: 0.6, 30: 0.8, 45: 1, 60: 1 }[a.time];
+  const r5 = (n) => Math.max(10, Math.min(100, Math.round(n / 5) * 5));
+  const t = {
+    pushups: r5(reps * tf * (a.injury === 'shoulder' ? 0.5 : 1)),
+    situps: r5(reps * tf * (a.injury === 'back' ? 0.5 : 1)),
+    squats: r5(reps * 1.25 * tf * (a.injury === 'knee' ? 0.6 : 1)),
+    run: Math.max(1, Math.min(10, Math.round(([1, 2, 4, 6][run] + (a.goal === 'endurance' ? 1 : 0)) * tf * (a.injury === 'knee' ? 0.5 : 1) * 2) / 2)),
+  };
+  const bmr = 10 * w + 6.25 * h - 5 * age + { m: 5, f: -161, x: -78 }[a.sex];
+  const tdee = bmr * [1.2, 1.375, 1.55, 1.725][act];
+  const kcal = Math.round(tdee * { fat: 0.8, muscle: 1.1, recomp: 0.95, endurance: 1, health: 1 }[a.goal] / 10) * 10;
+  return {
+    targets: t,
+    stats: { str: 8 + push * 3, agi: 8 + run * 3, vit: 8 + act * 3, int: 10, per: 10 },
+    bmi: w / (h / 100) ** 2,
+    bmr: Math.round(bmr), tdee: Math.round(tdee), kcal,
+    protein: Math.round(w * { fat: 2, muscle: 1.8, recomp: 2, endurance: 1.4, health: 1.2 }[a.goal]),
+    water: Math.round(w * 35 / 100) / 10,
+  };
+}
+
+const bmiLabel = (b) => (b < 18.5 ? 'Bajo peso' : b < 25 ? 'Normal' : b < 30 ? 'Sobrepeso' : 'Obesidad');
+
+const GOAL_SIDE = {
+  fat: [['Caminar 8.000 pasos', 30, 'agi'], ['Un día sin azúcar ni ultraprocesados', 40, 'vit']],
+  muscle: [['Llegar a la meta de proteína', 40, 'str'], ['Dormir 8 horas', 30, 'vit']],
+  recomp: [['Llegar a la meta de proteína', 40, 'str'], ['Caminar 8.000 pasos', 30, 'agi']],
+  endurance: [['10 min de estiramiento / movilidad', 20, 'agi'], ['Dormir 8 horas', 30, 'vit']],
+  health: [['10 min de estiramiento / movilidad', 20, 'agi'], ['Meditar 10 minutos', 20, 'per']],
+};
+
 const SHADOWS = ['Igris', 'Iron', 'Tank', 'Tusk', 'Beru', 'Bellion', 'Kaisel', 'Greed', 'Jima', 'Fang'];
 
 /* ================= STATE ================= */
@@ -70,7 +124,7 @@ const today = (d = new Date()) => {
   return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
 };
 
-const freshDaily = (date) => ({ date, progress: { pushups: 0, situps: 0, squats: 0, run: 0 }, claimed: false, dungeon: null });
+const freshDaily = (date) => ({ date, progress: { pushups: 0, situps: 0, squats: 0, run: 0 }, claimed: false, dungeon: null, timer: { acc: 0, start: null } });
 
 function defaultState() {
   return {
@@ -89,16 +143,23 @@ function defaultState() {
       { id: 2, name: 'Tomar 2L de agua', xp: 20, stat: 'vit', done: null },
     ],
     sound: true, history: [],
+    profile: null, weights: [],
   };
 }
 
 let S = load();
 let tab = 'status';
+let evalDraft = null; // { step, answers } while the evaluation is open
+let rest = null; // { end } rest countdown
 
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return Object.assign(defaultState(), JSON.parse(raw));
+    if (raw) {
+      const st = Object.assign(defaultState(), JSON.parse(raw));
+      st.daily.timer = st.daily.timer || { acc: 0, start: null };
+      return st;
+    }
   } catch (e) { /* ignore */ }
   return defaultState();
 }
@@ -180,6 +241,7 @@ function gainXP(base, source) {
   if (source === 'dungeon' && titleIs('wolf')) mult += 0.4;
   if (source === 'side' && titleIs('beyond')) mult += 0.25;
   if (titleIs('monarch')) mult += 0.25;
+  if (titleIs('body')) mult += 0.1;
   const xp = Math.round(base * mult);
   S.xp += xp;
   let ups = 0;
@@ -254,10 +316,22 @@ function claimDaily() {
     extra = `\n\n<span class="arise">¡LEVÁNTATE!</span>\nLa sombra <b>${sh}</b> se ha unido a tu ejército.`;
   }
   notify('Misión Diaria', `Has completado la misión diaria\n[Preparativos para volverse poderoso].\n\nRecompensas:\n• Recuperación total\n• Puntos de habilidad +3\n• Caja Aleatoria ×1\n• XP +${xp}  ·  Oro +${g}${extra}`);
+  if (S.profile && S.totalDaily % 7 === 0) raiseDifficulty();
   if (new Date().getHours() < 7) unlockTitle('early');
   if (S.streak >= 7) unlockTitle('iron');
   if (S.streak >= 30) unlockTitle('demon');
   save(); render();
+}
+
+function raiseDifficulty() {
+  const before = JSON.stringify(S.targets);
+  for (const k in S.targets) {
+    const up = k === 'run' ? Math.round(S.targets[k] * 1.1 * 2) / 2 : Math.round((S.targets[k] * 1.1) / 5) * 5;
+    S.targets[k] = Math.min(CANON[k], Math.max(S.targets[k] + (k === 'run' ? 0.5 : 5), up));
+  }
+  if (JSON.stringify(S.targets) !== before)
+    notify('Notificación', 'Tu cuerpo se ha adaptado.\n\nLa dificultad de la misión diaria ha aumentado.\n\n' +
+      Object.entries(EXERCISES).map(([k, e]) => `${e.name}: ${S.targets[k]}${e.unit}`).join('\n'));
 }
 
 function completeJobChange() {
@@ -358,10 +432,35 @@ function timeLeft() {
   return `${z(Math.floor(s / 3600))}:${z(Math.floor((s % 3600) / 60))}:${z(s % 60)}`;
 }
 
+const fmt = (sec) => {
+  const z = (n) => String(n).padStart(2, '0');
+  sec = Math.max(0, Math.floor(sec));
+  return `${z(Math.floor(sec / 3600))}:${z(Math.floor((sec % 3600) / 60))}:${z(sec % 60)}`;
+};
+const timerSec = () => {
+  const t = S.daily.timer;
+  return t.acc + (t.start ? (Date.now() - t.start) / 1000 : 0);
+};
+
+function tickTimers() {
+  const sw = $('#sw');
+  if (sw) sw.textContent = fmt(timerSec());
+  if (!rest) return;
+  const left = (rest.end - Date.now()) / 1000;
+  const el = $('#rest');
+  if (left <= 0) {
+    rest = null;
+    ding(false); setTimeout(() => ding(false), 350);
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    if (el) el.textContent = '¡Descanso terminado!';
+  } else if (el) el.textContent = `Descanso: ${Math.ceil(left)} s`;
+}
+
 function render() {
   document.body.classList.toggle('penalty', !!S.penalty);
   const app = $('#app');
   if (!S.awakened) { $('#tabs').hidden = true; app.innerHTML = viewAwaken(); bindAwaken(); return; }
+  if (!S.profile || evalDraft) { $('#tabs').hidden = true; app.innerHTML = viewEval(); return; }
   $('#tabs').hidden = false;
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   decayFatigue();
@@ -387,9 +486,107 @@ function bindAwaken() {
     S.daily = freshDaily(today());
     save();
     notify('Notificación', `Felicidades por convertirte en Jugador, <b>${esc(nm)}</b>.`);
-    notify('Misión Diaria', 'La misión diaria [Entrenamiento de fuerza] ha llegado.\n\nRevisa la pestaña Misiones.');
+    notify('Notificación', 'Iniciando evaluación del Jugador...\n\nResponde con honestidad. El Sistema ajustará tus misiones a tu condición actual.');
     render();
   };
+}
+
+function viewEval() {
+  if (!evalDraft) evalDraft = { step: 0, answers: S.profile ? { ...S.profile.answers } : {} };
+  const { step, answers } = evalDraft;
+  if (step >= QUESTIONS.length) return viewEvalResult();
+  const q = QUESTIONS[step];
+  const val = answers[q.id];
+  return `<div class="awaken"><div class="win">
+    <div class="win-title">Evaluación</div>
+    <div class="label">${step + 1} / ${QUESTIONS.length}</div>${bar('', step, QUESTIONS.length)}
+    <p class="msg">${q.q}</p>
+    ${q.hint ? `<p class="muted" style="font-size:14px;margin-top:-6px">${q.hint}</p>` : ''}
+    ${q.opts
+      ? q.opts.map(([v, l]) => `<button class="btn block" data-ans="${v}" style="${val === v ? 'background:rgba(63,182,255,.35)' : ''}">${l}</button>`).join('')
+      : `<div class="row"><input id="qnum" type="number" inputmode="decimal" min="${q.num[0]}" max="${q.num[1]}" step="${q.step || 1}" value="${val ?? ''}" placeholder="${q.unit}">
+         <span class="muted">${q.unit}</span></div>
+         <p class="red" id="qerr" style="font-size:14px;min-height:1em"></p>
+         <button class="btn block" id="qnext">Siguiente</button>`}
+    ${step > 0 ? '<button class="btn block small" id="qback" style="opacity:.7">Atrás</button>' : ''}
+    ${S.profile ? '<button class="btn block small danger" id="qcancel">Cancelar</button>' : ''}
+  </div></div>`;
+}
+
+function viewEvalResult() {
+  const a = evalDraft.answers;
+  const p = computePlan(a);
+  const first = !S.profile;
+  return `<div class="win"><div class="win-title">Resultado</div>
+    <p class="center" style="margin-top:0">Evaluación completada.<br><b>Objetivo: ${GOALS[a.goal]}</b></p>
+    ${first ? `<hr><div class="label center">Estadísticas iniciales</div>
+      <div class="grid2">${Object.entries(STATS).map(([k, [, ab]]) => `<div class="stat"><span>${ab}</span><b>${p.stats[k]}</b></div>`).join('')}</div>` : ''}
+    <hr><div class="label center">Misión diaria asignada</div>
+    ${Object.entries(EXERCISES).map(([k, e]) => `<div class="row"><span>${e.name}</span><b>${p.targets[k]}${e.unit}</b></div>`).join('')}
+    <p class="muted" style="font-size:14px">Cada 7 misiones completadas la dificultad sube un 10% hasta llegar al estándar del Sistema: 100 / 100 / 100 / 10 km.
+    ${a.injury !== 'none' ? '<br>Se redujo la carga en la zona lesionada.' : ''}</p>
+    <hr><div class="label center">Datos del cuerpo</div>
+    <div class="row"><span>IMC</span><b>${p.bmi.toFixed(1)} · ${bmiLabel(p.bmi)}</b></div>
+    <div class="row"><span>Gasto diario estimado</span><b>${p.tdee} kcal</b></div>
+    <div class="row"><span>Calorías recomendadas</span><b class="gold">${p.kcal} kcal</b></div>
+    <div class="row"><span>Proteína</span><b>${p.protein} g/día</b></div>
+    <div class="row"><span>Agua</span><b>${p.water} L/día</b></div>
+    <p class="muted" style="font-size:13px">Son estimaciones generales, no reemplazan a un médico o nutricionista.</p>
+    <button class="btn block" id="qdone">${first ? 'Aceptar y comenzar' : 'Aplicar'}</button>
+    <button class="btn block small" id="qback" style="opacity:.7">Atrás</button>
+  </div>`;
+}
+
+function finishEval() {
+  const a = evalDraft.answers;
+  const p = computePlan(a);
+  const first = !S.profile;
+  S.profile = { answers: a, plan: p, reminderHour: { morning: 12, afternoon: 19, night: 21 }[a.when], start: +a.weight };
+  S.targets = { ...p.targets };
+  if (!S.weights.length || S.weights[S.weights.length - 1].kg !== +a.weight) S.weights.push({ date: today(), kg: +a.weight });
+  if (first) {
+    S.stats = { ...p.stats };
+    S.hp = maxHP(); S.mp = maxMP();
+    for (const [name, xp, stat] of GOAL_SIDE[a.goal])
+      if (!S.side.some((q) => q.name === name)) S.side.push({ id: Date.now() + xp + S.side.length, name, xp, stat, done: null });
+  }
+  evalDraft = null;
+  save();
+  if (first) notify('Misión Diaria', 'La misión diaria [Entrenamiento de fuerza] ha llegado.\n\nRevisa la pestaña Misiones.');
+  else notify('Notificación', 'Evaluación actualizada.\nLa misión diaria fue ajustada.');
+  tab = first ? 'quests' : tab;
+  render();
+}
+
+function logWeight() {
+  const kg = Number($('#wkg').value);
+  if (!(kg >= 30 && kg <= 300)) return;
+  const last = S.weights[S.weights.length - 1];
+  if (last && last.date === today()) last.kg = kg; else S.weights.push({ date: today(), kg });
+  const goal = +S.profile.answers.goalWeight, dir = Math.sign(goal - S.profile.start);
+  if (dir === 0 || (kg - goal) * dir >= 0) unlockTitle('body');
+  save(); render();
+}
+
+function viewProfile() {
+  if (!S.profile) return '';
+  const a = S.profile.answers, p = S.profile.plan;
+  const cur = S.weights.length ? S.weights[S.weights.length - 1].kg : +a.weight;
+  const goal = +a.goalWeight, start = S.profile.start;
+  const pct = start === goal ? 100 : Math.max(0, Math.min(100, ((start - cur) / (start - goal)) * 100));
+  const bmi = cur / (a.height / 100) ** 2;
+  const recent = S.weights.slice(-5).reverse();
+  return `<div class="win"><div class="win-title">Cuerpo</div>
+    <div class="row"><span class="label">Objetivo</span><b>${GOALS[a.goal]}</b></div>
+    <div class="row label" style="margin-top:8px"><span>${start} kg</span><span>Actual ${cur} kg</span><span>Meta ${goal} kg</span></div>
+    ${bar('', pct, 100)}
+    <div class="row"><span>IMC</span><b>${bmi.toFixed(1)} · ${bmiLabel(bmi)}</b></div>
+    <div class="row"><span>Calorías</span><b class="gold">${p.kcal} kcal</b></div>
+    <div class="row"><span>Proteína · Agua</span><b>${p.protein} g · ${p.water} L</b></div>
+    <hr>
+    <div class="row"><input id="wkg" type="number" inputmode="decimal" step="0.1" placeholder="Peso de hoy (kg)"><button class="btn small" id="wlog">Registrar</button></div>
+    ${recent.length > 1 ? `<p class="muted" style="font-size:14px">${recent.map((w) => `${w.date.slice(5)}: ${w.kg} kg`).join(' · ')}</p>` : ''}
+  </div>`;
 }
 
 function viewStatus() {
@@ -421,6 +618,7 @@ function viewStatus() {
     <div class="row"><span class="label">Racha</span><b>${S.streak} días (mejor: ${S.bestStreak})</b></div>
     ${S.shadows.length ? `<div class="row"><span class="label">Ejército de sombras</span><b style="color:var(--purple)">${S.shadows.length}</b></div>` : ''}
   </div>
+  ${viewProfile()}
   <div class="win"><div class="win-title">Habilidades</div>
     ${SKILLS.map((s) => {
       const has = s.job ? S.job !== 'Ninguno' : S.level >= s.lv;
@@ -462,6 +660,18 @@ function viewQuests() {
       : `<button class="btn block" id="claim" ${done ? '' : 'disabled'}>${done ? 'Reclamar recompensas' : 'Incompleta'}</button>`}
     <div class="warn">ADVERTENCIA: no completar la misión diaria resultará en un castigo apropiado.
       <div class="row" style="margin-top:4px"><span>Tiempo restante</span><span class="timer" id="timer">${timeLeft()}</span></div></div>
+    <hr>
+    <div class="label center">Cronómetro de entrenamiento</div>
+    <div class="center big-level" style="font-size:40px;margin:6px 0" id="sw">${fmt(timerSec())}</div>
+    <div class="row" style="justify-content:center">
+      <button class="btn small" id="swToggle">${S.daily.timer.start ? 'Pausar' : (S.daily.timer.acc ? 'Reanudar' : 'Iniciar')}</button>
+      <button class="btn small" id="swReset">Reiniciar</button>
+    </div>
+    <div class="row" style="justify-content:center;margin-top:10px">
+      <span class="muted">Descanso</span>
+      ${[30, 60, 90].map((n) => `<button class="btn small" data-rest="${n}">${n}s</button>`).join('')}
+    </div>
+    <p class="center timer" id="rest" style="min-height:1.2em">${rest ? `Descanso: ${Math.ceil((rest.end - Date.now()) / 1000)} s` : ''}</p>
     ${S.jobQuest === 'active' ? '<p class="center" style="color:var(--purple)">Misión de cambio de clase activa: completá el doble de cada objetivo hoy.</p>' : ''}
   </div>`;
   if (S.jobQuest === 'offered') {
@@ -534,6 +744,7 @@ function viewMore() {
     <div class="row"><span>Sonido</span><button class="btn small" id="snd">${S.sound ? 'Sí' : 'No'}</button></div>
     <div class="row" style="margin-top:8px"><span>Recordatorio</span><button class="btn small" id="notif">Activar</button></div>
     <p class="muted" style="font-size:14px">Misiones diarias completadas: ${S.totalDaily} · Mazmorras: ${S.dungeons}</p>
+    <button class="btn block" id="reeval">Repetir evaluación</button>
     <button class="btn block" id="export">Exportar datos</button>
     <button class="btn block" id="import">Importar datos</button>
     <button class="btn block danger" id="reset">Reiniciar Jugador</button>
@@ -564,8 +775,26 @@ document.addEventListener('click', (ev) => {
     S.gold -= it.price; addItem(d.buy); save(); render();
     notify('Tienda', `Has comprado:\n${it.ico} <b>[${it.name}]</b>`); return;
   }
+  if (d.ans) { evalDraft.answers[QUESTIONS[evalDraft.step].id] = d.ans; evalDraft.step++; render(); return; }
+  if (d.rest) { rest = { end: Date.now() + d.rest * 1000 }; tickTimers(); return; }
   if (d.del) { S.side = S.side.filter((q) => q.id != d.del); save(); render(); return; }
   switch (b.id) {
+    case 'qnext': {
+      const q = QUESTIONS[evalDraft.step], v = Number($('#qnum').value);
+      if (!(v >= q.num[0] && v <= q.num[1])) { $('#qerr').textContent = `Ingresá un valor entre ${q.num[0]} y ${q.num[1]}.`; return; }
+      evalDraft.answers[q.id] = v; evalDraft.step++; render(); return;
+    }
+    case 'qback': evalDraft.step--; render(); return;
+    case 'qcancel': evalDraft = null; render(); return;
+    case 'qdone': return finishEval();
+    case 'reeval': evalDraft = { step: 0, answers: { ...S.profile.answers } }; render(); window.scrollTo(0, 0); return;
+    case 'wlog': return logWeight();
+    case 'swToggle': {
+      const t = S.daily.timer;
+      if (t.start) { t.acc += (Date.now() - t.start) / 1000; t.start = null; } else t.start = Date.now();
+      save(); render(); return;
+    }
+    case 'swReset': S.daily.timer = { acc: 0, start: null }; save(); render(); return;
     case 'claim': return claimDaily();
     case 'survive': return clearPenalty();
     case 'stealth':
@@ -587,6 +816,10 @@ document.addEventListener('click', (ev) => {
       if (confirm('¿Borrar todo el progreso del Jugador?')) { S = defaultState(); save(); tab = 'status'; render(); }
       return;
   }
+});
+
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter' && ev.target.id === 'qnum') $('#qnext').click();
 });
 
 document.addEventListener('change', (ev) => {
@@ -625,14 +858,14 @@ async function enableReminder() {
   if (!('Notification' in window)) return notify('Error', 'Este dispositivo no soporta notificaciones.', { danger: true });
   const perm = await Notification.requestPermission();
   if (perm !== 'granted') return notify('Notificación', 'Permiso denegado.');
-  notify('Notificación', 'Recordatorios activados.\nCon la app abierta o en segundo plano, el Sistema te avisará a las 20:00 si la misión diaria sigue incompleta.');
+  notify('Notificación', `Recordatorios activados.\nCon la app abierta o en segundo plano, el Sistema te avisará a las ${S.profile?.reminderHour ?? 20}:00 si la misión diaria sigue incompleta.`);
 }
 
 let reminded = null;
 function maybeRemind() {
   if (!S.awakened || S.daily.claimed || reminded === today()) return;
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  if (new Date().getHours() < 20) return;
+  if (new Date().getHours() < (S.profile?.reminderHour ?? 20)) return;
   reminded = today();
   const body = 'La misión diaria sigue incompleta. No completarla resultará en un castigo apropiado.';
   navigator.serviceWorker?.ready
@@ -649,6 +882,7 @@ setInterval(() => {
   maybeRemind();
   const t = $('#timer');
   if (t) t.textContent = timeLeft();
+  tickTimers();
 }, 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { rollover(); render(); } });
 
