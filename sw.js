@@ -1,4 +1,4 @@
-const CACHE = 'sistema-v4';
+const CACHE = 'sistema-v5';
 const ASSETS = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -14,8 +14,9 @@ self.addEventListener('activate', (e) => {
 // Network first for app files (so updates arrive), cache fallback for offline.
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  const same = new URL(e.request.url).origin === location.origin;
   e.respondWith(
-    fetch(e.request)
+    (same ? fetch(e.request.url, { cache: 'no-cache' }) : fetch(e.request))
       .then((res) => {
         if (res.ok && (res.type === 'basic' || res.type === 'cors')) {
           const copy = res.clone();
