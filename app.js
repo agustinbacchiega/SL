@@ -105,6 +105,161 @@ function makeDungeon(tier) {
 const stepText = (st) => (st.unit === 'sec' ? `${st.name}: ${fmtMin(st.n)}` : `${st.n} × ${st.name}`);
 const fmtMin = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
+// Routines: [exercise, amount, 'rep'|'sec', injuries to avoid, substitute]
+const ROUTINES = {
+  despertar: { name: 'Despertar', sub: 'Cuerpo completo · principiante', stat: 'vit', rest: 60, scale: 'str', ex: [
+    ['Sentadillas', 10, 'rep', ['knee'], 'Puente de glúteo'],
+    ['Flexiones con rodillas apoyadas', 8, 'rep', ['shoulder'], 'Flexiones en pared'],
+    ['Puente de glúteo', 12, 'rep', [], null],
+    ['Plancha', 20, 'sec', ['shoulder'], 'Dead bug lento'],
+    ['Bird dog (cada lado)', 8, 'rep', [], null],
+    ['Caminata en el lugar', 120, 'sec', [], null]] },
+  igris: { name: 'Arsenal de Igris', sub: 'Fuerza · tren superior', stat: 'str', rest: 60, scale: 'str', ex: [
+    ['Flexiones', 12, 'rep', ['shoulder'], 'Flexiones en pared'],
+    ['Remo invertido bajo una mesa', 10, 'rep', ['back'], 'Remo con mochila a una mano'],
+    ['Fondos en silla', 10, 'rep', ['shoulder'], 'Extensión de tríceps con mochila'],
+    ['Flexiones pica', 8, 'rep', ['shoulder'], 'Elevaciones laterales con botellas'],
+    ['Flexiones diamante', 8, 'rep', ['shoulder'], 'Curl de bíceps con mochila'],
+    ['Plancha', 40, 'sec', ['shoulder'], 'Dead bug lento']] },
+  lobo: { name: 'Pasos del Lobo', sub: 'Fuerza · piernas y glúteos', stat: 'agi', rest: 60, scale: 'str', ex: [
+    ['Sentadillas', 20, 'rep', ['knee'], 'Puente de glúteo'],
+    ['Zancadas alternas', 12, 'rep', ['knee'], 'Puente de glúteo a una pierna'],
+    ['Sentadilla búlgara (cada pierna)', 8, 'rep', ['knee'], 'Patada de glúteo en cuadrupedia'],
+    ['Puente de glúteo', 15, 'rep', [], null],
+    ['Elevación de talones', 25, 'rep', [], null],
+    ['Sentadilla isométrica en pared', 40, 'sec', ['knee'], 'Abducción de cadera acostado']] },
+  nucleo: { name: 'Núcleo de Sombra', sub: 'Core y estabilidad', stat: 'vit', rest: 30, scale: 'str', ex: [
+    ['Plancha', 40, 'sec', ['shoulder'], 'Dead bug lento'],
+    ['Dead bug', 12, 'rep', [], null],
+    ['Abdominales bicicleta', 20, 'rep', ['back'], 'Bird dog (cada lado)'],
+    ['Plancha lateral (cada lado)', 25, 'sec', ['shoulder'], 'Pallof con toalla'],
+    ['Elevación de piernas', 12, 'rep', ['back'], 'Marcha en el suelo (dead bug)'],
+    ['Superman', 12, 'rep', ['back'], 'Bird dog (cada lado)']] },
+  kasaka: { name: 'Persecución de Kasaka', sub: 'HIIT · quema de grasa', stat: 'agi', rest: 20, scale: 'run', ex: [
+    ['Saltos de tijera', 40, 'sec', ['knee'], 'Paso lateral con brazos arriba'],
+    ['Mountain climbers', 30, 'sec', ['shoulder'], 'Rodillas al pecho de pie'],
+    ['Burpees', 30, 'sec', ['knee', 'shoulder'], 'Boxeo de sombra'],
+    ['Rodillas al pecho', 30, 'sec', ['knee'], 'Boxeo de sombra'],
+    ['Sentadilla con salto', 30, 'sec', ['knee'], 'Puñetazos rápidos de pie'],
+    ['Boxeo de sombra', 45, 'sec', [], null]] },
+  legion: { name: 'Marcha de la Legión', sub: 'Resistencia · cardio', stat: 'vit', rest: 0, scale: 'run', sets: 1, ex: [
+    ['Trote suave', 600, 'sec', ['knee'], 'Caminata rápida'],
+    ['Intervalos 1 min rápido / 1 min suave', 480, 'sec', ['knee'], 'Intervalos caminando rápido / lento'],
+    ['Escaleras o step', 180, 'sec', ['knee'], 'Caminata en pendiente'],
+    ['Caminata de recuperación', 300, 'sec', [], null]] },
+  tank: { name: 'Fortaleza de Tank', sub: 'Hipertrofia · volumen', stat: 'str', rest: 90, scale: 'str', ex: [
+    ['Flexiones lentas (3 s bajando)', 10, 'rep', ['shoulder'], 'Flexiones en pared lentas'],
+    ['Sentadillas lentas (3 s bajando)', 15, 'rep', ['knee'], 'Puente de glúteo con pausa'],
+    ['Remo con mochila a una mano', 12, 'rep', ['back'], 'Face pull con toalla'],
+    ['Zancada inversa', 10, 'rep', ['knee'], 'Puente de glúteo a una pierna'],
+    ['Fondos en silla', 12, 'rep', ['shoulder'], 'Extensión de tríceps con mochila'],
+    ['Superman con pausa', 12, 'rep', ['back'], 'Bird dog (cada lado)']] },
+  monarca: { name: 'Respiración del Monarca', sub: 'Movilidad · recuperación', stat: 'per', rest: 0, scale: null, sets: 1, ex: [
+    ['Gato-vaca', 60, 'sec', [], null],
+    ['Estiramiento de cadera (cada lado)', 45, 'sec', [], null],
+    ['Estiramiento de isquiotibiales', 45, 'sec', [], null],
+    ['Apertura de pecho en pared', 45, 'sec', [], null],
+    ['Postura del niño', 60, 'sec', [], null],
+    ['Respiración 4-7-8', 120, 'sec', [], null]] },
+};
+
+const GOAL_ROUTINES = {
+  fat: ['kasaka', 'lobo', 'legion', 'nucleo', 'igris'],
+  muscle: ['igris', 'lobo', 'tank', 'nucleo'],
+  recomp: ['igris', 'kasaka', 'lobo', 'nucleo', 'tank'],
+  endurance: ['legion', 'kasaka', 'lobo', 'nucleo'],
+  health: ['despertar', 'legion', 'nucleo', 'lobo'],
+};
+const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const TRAIN_DAYS = [[0, 2, 4], [0, 2, 4], [0, 1, 3, 4], [0, 1, 2, 4, 5]];
+
+function recommended() {
+  const a = S.profile.answers;
+  let list = [...GOAL_ROUTINES[a.goal]];
+  if ((a.pushups === '0' || a.activity === '0') && list[0] !== 'despertar') list = ['despertar', ...list.filter((r) => r !== 'despertar')];
+  return list;
+}
+
+function weekPlan() {
+  const rec = recommended();
+  const days = TRAIN_DAYS[+S.profile.answers.activity];
+  return DAYS.map((d, i) => {
+    const k = days.indexOf(i);
+    return k >= 0 ? rec[k % rec.length] : i === 6 ? 'monarca' : null;
+  });
+}
+
+function buildRoutine(id) {
+  const R = ROUTINES[id], a = S.profile.answers;
+  const lvl = R.scale === 'run' ? +a.run : R.scale === 'str' ? +a.pushups : 1;
+  const f = R.scale ? [0.6, 0.8, 1, 1.3][lvl] : 1;
+  const count = Math.min(R.ex.length, { 15: 3, 30: 4, 45: 5, 60: 6 }[a.time]);
+  const sets = R.sets || [2, 3, 3, 4][lvl];
+  const ex = R.ex.slice(0, count).map(([n, amt, unit, avoid, sub]) => {
+    const swap = avoid.includes(a.injury) && sub;
+    const v = unit === 'sec' ? Math.max(15, Math.round((amt * f) / 5) * 5) : Math.max(4, Math.round(amt * f));
+    return { name: swap ? sub : n, adapted: !!swap, v, unit };
+  });
+  const work = ex.reduce((t, e) => t + (e.unit === 'sec' ? e.v : e.v * 3), 0);
+  const mins = Math.max(5, Math.round((sets * (work + ex.length * R.rest)) / 60));
+  return { ...R, id, sets, ex, mins };
+}
+
+const routineDone = (id) => S.routineLog.some((r) => r.date === today() && r.id === id);
+
+function completeRoutine(id) {
+  if (routineDone(id)) return;
+  S.routineLog.push({ date: today(), id });
+  const R = ROUTINES[id];
+  const xp = gainXP(id === 'monarca' ? 30 : 60);
+  decayFatigue();
+  if (id === 'monarca') S.fatigue = Math.max(0, S.fatigue - 30);
+  else S.fatigue = Math.min(100, S.fatigue + 15);
+  const week = S.routineLog.filter((r) => Date.now() - new Date(r.date) < 7 * 864e5).length;
+  notify('Entrenamiento Completado', `[${R.name}]\n\nXP +${xp}\n${id === 'monarca' ? 'Fatiga -30' : 'Fatiga +15'}\n\nRutinas esta semana: ${week}`);
+  save(); render();
+}
+
+function routineCard(id, open) {
+  const r = buildRoutine(id);
+  const done = routineDone(id);
+  return `<details class="routine" ${open ? 'open' : ''}><summary>
+      <b>${r.name}</b> ${done ? '<span class="check">✔</span>' : ''}<span class="tag">${STATS[r.stat][1]}</span>
+      <div class="desc muted">${r.sub} · ~${r.mins} min</div></summary>
+    <p class="muted" style="font-size:14px;margin:6px 0">${r.sets > 1 ? `${r.sets} ${id === 'kasaka' ? 'rondas' : 'series'}` : '1 vuelta'}${r.rest ? ` · descanso ${r.rest} s entre ejercicios` : ''}</p>
+    ${r.ex.map((e) => `<div class="goal"><span class="name">${e.name}${e.adapted ? ' <span class="tag">adaptado</span>' : ''}</span>
+      ${e.unit === 'sec'
+        ? `<button class="btn small" data-rest="${e.v}" data-label="${esc(e.name)}">⏱ ${fmtMin(e.v)}</button>`
+        : `<span class="count">${e.v} reps</span>`}</div>`).join('')}
+    ${r.rest ? `<div class="row" style="justify-content:center;margin-top:8px"><button class="btn small" data-rest="${r.rest}">Descanso ${r.rest}s</button></div>` : ''}
+    ${done ? '<p class="center" style="color:var(--accent)">✔ Completada hoy</p>' : `<button class="btn block" data-routine="${id}">Completar rutina</button>`}
+  </details>`;
+}
+
+function viewRoutines() {
+  const plan = weekPlan();
+  const ti = (new Date().getDay() + 6) % 7;
+  const todayId = plan[ti];
+  const rec = recommended();
+  const a = S.profile.answers;
+  return `<div class="win"><div class="win-title">Plan Semanal</div>
+    <p class="center muted" style="margin-top:0;font-size:15px">Objetivo: <b>${GOALS[a.goal]}</b> · ${TRAIN_DAYS[+a.activity].length} días de entrenamiento${a.injury !== 'none' ? ' · ejercicios adaptados a tu lesión' : ''}</p>
+    ${plan.map((id, i) => `<div class="row" style="padding:5px 8px;${i === ti ? 'border:1px solid var(--line);border-radius:4px;box-shadow:0 0 8px var(--glow)' : ''}">
+      <span class="label">${DAYS[i]}</span><span>${id ? ROUTINES[id].name : '<span class="muted">Descanso</span>'}${id && routineDone(id) ? ' ✔' : ''}</span></div>`).join('')}
+  </div>
+  <div class="win"><div class="win-title">Entrenamiento de Hoy</div>
+    ${todayId ? routineCard(todayId, true) : `<p class="center">Hoy es día de descanso.<br><span class="muted">La misión diaria sigue activa. Si querés moverte, hacé <b>Respiración del Monarca</b>.</span></p>`}
+    <p class="center timer" id="rest" style="min-height:1.2em">${rest ? `${rest.label || 'Descanso'}: ${Math.ceil((rest.end - Date.now()) / 1000)} s` : ''}</p>
+  </div>
+  <div class="win"><div class="win-title">Recomendadas</div>
+    ${rec.filter((id) => id !== todayId).map((id) => routineCard(id)).join('')}
+    ${todayId !== 'monarca' ? routineCard('monarca') : ''}
+  </div>
+  <div class="win"><div class="win-title">Otras Rutinas</div>
+    ${Object.keys(ROUTINES).filter((id) => !rec.includes(id) && id !== 'monarca' && id !== todayId).map((id) => routineCard(id)).join('')}
+  </div>`;
+}
+
 const BLOCK_MODES = { none: 'Solo por honor', ios: 'iPhone (Atajos)', android: 'Android (Bienestar Digital)' };
 
 const QUESTIONS = [
@@ -189,7 +344,7 @@ function defaultState() {
       { id: 2, name: 'Tomar 2L de agua', xp: 20, stat: 'vit', done: null },
     ],
     sound: true, history: [],
-    profile: null, weights: [],
+    profile: null, weights: [], routineLog: [],
   };
 }
 
@@ -546,8 +701,8 @@ function tickTimers() {
     rest = null;
     ding(false); setTimeout(() => ding(false), 350);
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-    if (el) el.textContent = '¡Descanso terminado!';
-  } else if (el) el.textContent = `Descanso: ${Math.ceil(left)} s`;
+    if (el) el.textContent = rest === null ? '¡Tiempo!' : '';
+  } else if (el) el.textContent = `${rest.label || 'Descanso'}: ${Math.ceil(left)} s`;
 }
 
 function render() {
@@ -558,7 +713,7 @@ function render() {
   $('#tabs').hidden = false;
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   decayFatigue();
-  app.innerHTML = { status: viewStatus, quests: viewQuests, inventory: viewInventory, shop: viewShop, more: viewMore }[tab]();
+  app.innerHTML = { status: viewStatus, quests: viewQuests, routines: viewRoutines, inventory: viewInventory, shop: viewShop, more: viewMore }[tab]();
 }
 
 function viewAwaken() {
@@ -910,7 +1065,8 @@ document.addEventListener('click', (ev) => {
     notify('Tienda', `Has comprado:\n${it.ico} <b>[${it.name}]</b>`); return;
   }
   if (d.ans) { evalDraft.answers[QUESTIONS[evalDraft.step].id] = d.ans; evalDraft.step++; render(); return; }
-  if (d.rest) { rest = { end: Date.now() + d.rest * 1000 }; tickTimers(); return; }
+  if (d.rest) { rest = { end: Date.now() + d.rest * 1000, label: d.label }; tickTimers(); return; }
+  if (d.routine) return completeRoutine(d.routine);
   if (d.dstep) return dungeonStep(Number(d.dstep));
   if (d.dstart) {
     const st = S.daily.dungeon.steps[d.dstart];

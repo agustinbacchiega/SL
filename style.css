@@ -103,7 +103,7 @@ hr { border: 0; border-top: 1px solid rgba(63, 182, 255, 0.3); margin: 12px 0; }
   background: rgba(5, 10, 20, 0.95); border-top: 1px solid var(--line); box-shadow: 0 0 14px var(--glow);
   padding-bottom: env(safe-area-inset-bottom); z-index: 10;
 }
-#tabs button { flex: 1; max-width: 112px; background: none; border: 0; padding: 14px 2px; font-weight: 600; font-size: 14px;
+#tabs button { flex: 1; max-width: 100px; background: none; border: 0; padding: 14px 0; font-weight: 600; font-size: 12px;
   color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
 #tabs button.on { color: var(--accent); text-shadow: 0 0 8px var(--glow); }
 
@@ -121,3 +121,9 @@ hr { border: 0; border-top: 1px solid rgba(63, 182, 255, 0.3); margin: 12px 0; }
 
 .arise { font-size: 44px; font-weight: 700; letter-spacing: 8px; color: var(--purple); text-shadow: 0 0 20px var(--purple); }
 [hidden] { display: none !important; }
+.routine { border-bottom: 1px dashed rgba(63,182,255,.25); padding: 10px 0; }
+.routine:last-child { border-bottom: 0; }
+.routine summary { cursor: pointer; list-style: none; }
+.routine summary::-webkit-details-marker { display: none; }
+.routine summary::before { content: "▸ "; color: var(--accent); }
+.routine[open] summary::before { content: "▾ "; }

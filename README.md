@@ -26,6 +26,23 @@ En *Estado* podés registrar tu peso y ver el progreso hacia la meta. En *Sistem
 
 La misión diaria trae además un **cronómetro de entrenamiento** y temporizadores de descanso (30, 60 y 90 s).
 
+## Rutinas
+
+La pestaña *Rutinas* arma un **plan semanal** según tu evaluación: objetivo, días que entrenás, nivel, lesiones y tiempo disponible. Hay 8 rutinas con nombres del anime y ejercicios reales sin equipo:
+
+| Rutina | Enfoque |
+|---|---|
+| Despertar | Cuerpo completo, principiante |
+| Arsenal de Igris | Fuerza, tren superior |
+| Pasos del Lobo | Fuerza, piernas y glúteos |
+| Núcleo de Sombra | Core y estabilidad |
+| Persecución de Kasaka | HIIT, quema de grasa |
+| Marcha de la Legión | Resistencia, cardio |
+| Fortaleza de Tank | Hipertrofia, volumen |
+| Respiración del Monarca | Movilidad y recuperación |
+
+Las repeticiones y series se ajustan a tu nivel, la cantidad de ejercicios a tu tiempo, y si tenés una lesión se reemplazan los ejercicios de riesgo (marcados como *adaptado*). Los ejercicios por tiempo tienen cuenta regresiva. Completar una rutina da XP.
+
 ## Bloqueo de apps en el castigo
 
 Una app web no puede bloquear otras apps por sí sola, así que se apoya en el sistema del teléfono (configurable en *Sistema → Zona de Castigo*):
