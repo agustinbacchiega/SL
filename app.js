@@ -54,13 +54,58 @@ const SKILLS = [
 ];
 
 const DUNGEONS = [
-  { name: 'Mazmorra de rango E', task: '50 burpees', xp: 150 },
-  { name: 'Mazmorra de rango D', task: '5 min de plancha acumulada', xp: 200 },
-  { name: 'Mazmorra de rango C', task: '100 saltos de tijera + 50 zancadas', xp: 250 },
-  { name: 'Mazmorra de rango B', task: '20 min de cardio intenso', xp: 300 },
-  { name: 'Mazmorra de rango A', task: '3 series de 20 flexiones diamante', xp: 350 },
-  { name: 'Castillo del Demonio', task: '30 min de entrenamiento libre sin pausa', xp: 500 },
+  { name: 'Mazmorra de rango E', boss: 'Lycan de Colmillos de Acero', xp: 150, m: 1 },
+  { name: 'Mazmorra de rango D', boss: 'Kasaka, la Serpiente Venenosa', xp: 200, m: 1.5 },
+  { name: 'Mazmorra de rango C', boss: 'Caballero Sangriento Igris', xp: 250, m: 2 },
+  { name: 'Mazmorra de rango B', boss: 'Cerbero, Guardián del Castillo', xp: 300, m: 2.5 },
+  { name: 'Mazmorra de rango A', boss: 'Vulcan, Señor de los Demonios', xp: 350, m: 3 },
+  { name: 'Castillo del Demonio', boss: 'Baran, el Rey Demonio', xp: 500, m: 4 },
 ];
+
+// [name, base amount, unit, type, injuries to avoid]
+const EX_POOL = [
+  ['Burpees', 10, 'rep', 'cardio', ['knee', 'shoulder']],
+  ['Saltos de tijera', 40, 'rep', 'cardio', ['knee']],
+  ['Mountain climbers', 30, 'rep', 'cardio', ['shoulder']],
+  ['Rodillas al pecho', 30, 'sec', 'cardio', ['knee']],
+  ['Boxeo de sombra', 60, 'sec', 'cardio', []],
+  ['Caminata rápida', 300, 'sec', 'cardio', []],
+  ['Zancadas', 20, 'rep', 'str', ['knee']],
+  ['Flexiones', 15, 'rep', 'str', ['shoulder']],
+  ['Puente de glúteo', 20, 'rep', 'str', []],
+  ['Superman', 15, 'rep', 'str', ['back']],
+  ['Elevación de talones', 30, 'rep', 'str', []],
+  ['Sentadilla isométrica en pared', 40, 'sec', 'str', ['knee']],
+  ['Dead bug', 16, 'rep', 'core', []],
+  ['Abdominales bicicleta', 20, 'rep', 'core', ['back']],
+  ['Plancha', 45, 'sec', 'core', ['shoulder']],
+  ['Plancha lateral (cada lado)', 30, 'sec', 'core', ['shoulder']],
+];
+
+function makeDungeon(tier) {
+  const D = DUNGEONS[tier];
+  const a = S.profile ? S.profile.answers : {};
+  const pool = EX_POOL.filter((e) => !e[4].includes(a.injury));
+  const prefer = { fat: 'cardio', endurance: 'cardio', muscle: 'str', recomp: 'str' }[a.goal];
+  const weighted = pool.flatMap((e) => (e[3] === prefer ? [e, e, e] : [e]));
+  const picked = [];
+  while (picked.length < 2) {
+    const e = weighted[Math.floor(Math.random() * weighted.length)];
+    if (!picked.includes(e)) picked.push(e);
+  }
+  const timed = pool.filter((e) => e[2] === 'sec' && !picked.includes(e));
+  const boss = timed[Math.floor(Math.random() * timed.length)];
+  const step = (e, mult) => {
+    const n = e[2] === 'sec' ? Math.round((e[1] * D.m * mult) / 15) * 15 : Math.round(e[1] * D.m * mult);
+    return { name: e[0], n, unit: e[2], done: false };
+  };
+  return { name: D.name, boss: D.boss, xp: D.xp, steps: [step(picked[0], 1), step(picked[1], 1), step(boss, 1.5)], run: null, done: false };
+}
+
+const stepText = (st) => (st.unit === 'sec' ? `${st.name}: ${fmtMin(st.n)}` : `${st.n} × ${st.name}`);
+const fmtMin = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+
+const BLOCK_MODES = { none: 'Solo por honor', ios: 'iPhone (Atajos)', android: 'Android (Bienestar Digital)' };
 
 const QUESTIONS = [
   { id: 'sex', q: 'Sexo biológico', hint: 'Solo se usa para estimar tu metabolismo.', opts: [['m', 'Hombre'], ['f', 'Mujer'], ['x', 'Prefiero no decir']] },
@@ -134,7 +179,8 @@ function defaultState() {
     job: 'Ninguno', jobQuest: null, title: null, titles: [], shadows: [],
     inventory: { box: 1 },
     targets: { pushups: 100, situps: 100, squats: 100, run: 10 },
-    penaltyTask: '4 horas de supervivencia → 100 burpees',
+    penaltyTask: '100 burpees',
+    block: { hours: 4, apps: 'Instagram, TikTok, YouTube', mode: 'none', shortcut: 'SL Castigo' },
     daily: freshDaily(today()),
     penalty: null, stealthUsed: null,
     streak: 0, bestStreak: 0, totalDaily: 0, dungeons: 0,
@@ -158,6 +204,7 @@ function load() {
     if (raw) {
       const st = Object.assign(defaultState(), JSON.parse(raw));
       st.daily.timer = st.daily.timer || { acc: 0, start: null };
+      st.block = Object.assign(defaultState().block, st.block);
       return st;
     }
   } catch (e) { /* ignore */ }
@@ -289,7 +336,12 @@ function logExercise(k, amount) {
 
   // Beyond limits / job change: double every target
   const doubled = Object.keys(S.targets).every((x) => p[x] >= S.targets[x] * 2);
-  if (doubled) {
+  if (doubled && !S.daily.secret) {
+    S.daily.secret = true;
+    const xp = gainXP(150 + S.level * 5, 'daily');
+    const g = gainGold(200);
+    addItem('box');
+    notify('Misión Secreta', `[Misión Secreta: Superar los límites]\n\nHas superado el doble de la misión diaria.\n\nRecompensa oculta:\n• XP +${xp}\n• Oro +${g}\n• Caja Aleatoria ×1`);
     unlockTitle('beyond');
     if (S.jobQuest === 'active') completeJobChange();
   }
@@ -346,17 +398,34 @@ function rollover() {
   const missed = !S.daily.claimed;
   if (missed && S.awakened && S.daily.date) {
     S.streak = 0;
-    S.penalty = { date: t, done: false };
+    S.penalty = { date: t, until: Date.now() + S.block.hours * 3.6e6, taskDone: false };
     const loss = Math.round(maxHP() * (titleIs('overcame') ? 0.25 : 0.5));
     S.hp = Math.max(1, S.hp - loss);
     S.daily = freshDaily(t);
-    notify('ADVERTENCIA', `No has completado la misión diaria.\n\nSerás transportado a la <b>Zona de Castigo</b>.\n\n[Misión de Castigo: Sobrevivir]\nHP -${loss}`, { danger: true, ok: 'Entendido' });
+    notify('ADVERTENCIA', `No has completado la misión diaria.\n\nSerás transportado a la <b>Zona de Castigo</b>.\n\n[Misión de Castigo: Sobrevivir]\nDuración: ${S.block.hours} h\nApps prohibidas: ${esc(S.block.apps || 'ninguna')}\nHP -${loss}`,
+      { danger: true, ok: S.block.mode === 'none' ? 'Entendido' : 'Entrar y activar bloqueo', onOk: () => activateBlock() });
   } else {
     S.daily = freshDaily(t);
   }
   if (S.awakened) notify('Misión Diaria', 'La misión diaria [Entrenamiento de fuerza] ha llegado.');
   save();
   return true;
+}
+
+const penaltyLeft = () => (S.penalty && S.penalty.until ? Math.max(0, (S.penalty.until - Date.now()) / 1000) : 0);
+
+function activateBlock() {
+  if (!S.penalty) return;
+  if (S.block.mode === 'ios') {
+    const until = new Date(S.penalty.until).toISOString();
+    location.href = `shortcuts://run-shortcut?name=${encodeURIComponent(S.block.shortcut)}&input=text&text=${encodeURIComponent(until)}`;
+  } else if (S.block.mode === 'android') {
+    location.href = 'intent://#Intent;package=com.google.android.apps.wellbeing;end';
+  }
+}
+
+function checkPenalty() {
+  if (S.penalty && S.penalty.taskDone && penaltyLeft() <= 0) clearPenalty();
 }
 
 function clearPenalty() {
@@ -387,8 +456,8 @@ function useItem(id) {
     if (S.daily.dungeon) { addItem('key'); notify('Notificación', 'Ya hay una mazmorra abierta hoy.'); }
     else {
       const tier = Math.min(DUNGEONS.length - 1, Math.floor(S.dungeons / 3));
-      S.daily.dungeon = { ...DUNGEONS[tier], done: false };
-      notify('Mazmorra Instantánea', `Has entrado a: <b>${DUNGEONS[tier].name}</b>\n\nObjetivo: ${DUNGEONS[tier].task}\nRecompensa: ${DUNGEONS[tier].xp} XP\n\nEstá en la pestaña Misiones.`);
+      S.daily.dungeon = makeDungeon(tier);
+      notify('Mazmorra Instantánea', `Has entrado a: <b>${DUNGEONS[tier].name}</b>\n\nDerrota 2 oleadas y al jefe:\n<b>${DUNGEONS[tier].boss}</b>\n\nRecompensa: ${DUNGEONS[tier].xp} XP\nEstá en la pestaña Misiones.`);
     }
   }
   save(); render();
@@ -401,10 +470,21 @@ function clearDungeon() {
   S.dungeons++;
   const xp = gainXP(d.xp, 'dungeon');
   const g = gainGold(150);
-  let msg = `Has despejado la mazmorra.\n\nXP +${xp}  ·  Oro +${g}`;
+  let msg = `${d.boss ? `Has derrotado a <b>${d.boss}</b>.\n` : ''}Has despejado la mazmorra.\n\nXP +${xp}  ·  Oro +${g}`;
   if (hasSkill('Sed de Sangre')) { addItem('box'); msg += '\nCaja Aleatoria ×1'; }
+  if (d.boss && Math.random() < 0.25) { addItem('key'); msg += '\n🗝️ Botín del jefe: Llave de Mazmorra'; }
   notify('Mazmorra Despejada', msg);
   if (S.dungeons >= 3) unlockTitle('wolf');
+  save(); render();
+}
+
+function dungeonStep(i) {
+  const d = S.daily.dungeon;
+  if (!d || !d.steps || d.steps[i].done) return;
+  d.steps[i].done = true;
+  d.run = null;
+  if (d.steps.every((st) => st.done)) return clearDungeon();
+  if (i === d.steps.length - 2) notify('Notificación', `Oleadas despejadas.\n\nEl jefe <b>${d.boss}</b> ha aparecido.`, { danger: true });
   save(); render();
 }
 
@@ -445,6 +525,20 @@ const timerSec = () => {
 function tickTimers() {
   const sw = $('#sw');
   if (sw) sw.textContent = fmt(timerSec());
+  const pen = $('#pen');
+  if (pen) pen.textContent = fmt(penaltyLeft());
+  if (S.penalty && S.penalty.until && penaltyLeft() <= 0 && !S.penalty.notified) {
+    S.penalty.notified = true; save();
+    notify('Notificación', S.penalty.taskDone ? 'Tiempo cumplido.' : 'El tiempo de castigo terminó.\nCompleta el ejercicio de castigo para salir.', { onOk: checkPenalty });
+    render();
+  }
+  const d = S.daily.dungeon;
+  if (d && d.run) {
+    const left = (d.run.end - Date.now()) / 1000;
+    const el = $('#drun');
+    if (left <= 0) { ding(false); if (navigator.vibrate) navigator.vibrate([200, 100, 200]); dungeonStep(d.run.i); }
+    else if (el) el.textContent = fmtMin(Math.ceil(left));
+  }
   if (!rest) return;
   const left = (rest.end - Date.now()) / 1000;
   const el = $('#rest');
@@ -636,9 +730,15 @@ function viewQuests() {
   if (S.penalty) {
     html += `<div class="win"><div class="win-title">Zona de Castigo</div>
       <p class="msg center">[Misión de Castigo: Sobrevivir]</p>
-      <p class="center">${esc(S.penaltyTask)}</p>
-      <p class="muted center" style="font-size:14px">Hasta que no sobrevivas, el Sistema permanecerá en rojo.</p>
-      <button class="btn block danger" id="survive">He sobrevivido</button>
+      ${S.penalty.until ? `<div class="label center">Tiempo restante</div>
+      <div class="center big-level red" style="font-size:40px;margin:4px 0" id="pen">${fmt(penaltyLeft())}</div>
+      ${S.block.apps ? `<p class="center">Apps prohibidas:<br><b>${esc(S.block.apps)}</b></p>` : ''}
+      ${S.block.mode !== 'none' && penaltyLeft() > 0 ? `<button class="btn block danger" id="blockOn">🔒 Activar bloqueo</button>` : ''}` : ''}
+      <hr>
+      <div class="goal ${S.penalty.taskDone ? 'done' : ''}"><span class="name">${esc(S.penaltyTask)}</span>
+        ${S.penalty.taskDone ? '<span class="check">✔</span>' : '<button class="btn small danger" id="ptaskDone">Hecho</button>'}</div>
+      <p class="muted center" style="font-size:14px">Para sobrevivir: cumplí el tiempo sin usar esas apps y hacé el ejercicio de castigo.</p>
+      ${!S.penalty.until ? '<button class="btn block danger" id="survive">He sobrevivido</button>' : ''}
       ${hasSkill('Sigilo') ? `<button class="btn block" id="stealth" ${S.mp < 100 || (S.stealthUsed && Date.now() - S.stealthUsed < 7 * 864e5) ? 'disabled' : ''}>Usar [Sigilo] (100 MP, 1/semana)</button>` : ''}
     </div>`;
   }
@@ -681,9 +781,27 @@ function viewQuests() {
   }
   if (S.daily.dungeon) {
     const d = S.daily.dungeon;
-    html += `<div class="win"><div class="win-title">Mazmorra Instantánea</div>
-      <p class="center"><b>${d.name}</b><br>${d.task}<br><span class="muted">Recompensa: ${d.xp} XP</span></p>
-      ${d.done ? '<p class="center" style="color:var(--accent)">✔ Despejada</p>' : '<button class="btn block" id="dungeon">Mazmorra despejada</button>'}</div>`;
+    if (!d.steps) {
+      html += `<div class="win"><div class="win-title">Mazmorra Instantánea</div>
+        <p class="center"><b>${d.name}</b><br>${d.task}<br><span class="muted">Recompensa: ${d.xp} XP</span></p>
+        ${d.done ? '<p class="center" style="color:var(--accent)">✔ Despejada</p>' : '<button class="btn block" id="dungeon">Mazmorra despejada</button>'}</div>`;
+    } else {
+      const wavesDone = d.steps.slice(0, -1).every((st) => st.done);
+      html += `<div class="win"><div class="win-title">Mazmorra Instantánea</div>
+        <p class="center" style="margin-top:0"><b>${d.name}</b><br><span class="muted">Recompensa: ${d.xp} XP</span></p>
+        ${d.steps.map((st, i) => {
+          const isBoss = i === d.steps.length - 1;
+          const locked = isBoss && !wavesDone;
+          const running = d.run && d.run.i === i;
+          return `<div class="goal ${st.done ? 'done' : ''}" style="${locked ? 'opacity:.35' : ''}">
+            <span class="name">${isBoss ? `<b class="red">JEFE: ${d.boss}</b><br>` : `<span class="label">Oleada ${i + 1}</span><br>`}${locked ? '???' : stepText(st)}</span>
+            ${st.done ? '<span class="check">✔</span>' : locked ? '' : running
+              ? `<span class="timer" id="drun">${fmtMin(Math.ceil((d.run.end - Date.now()) / 1000))}</span>`
+              : st.unit === 'sec' ? `<button class="btn small" data-dstart="${i}">⏱ Iniciar</button>` : `<button class="btn small" data-dstep="${i}">Hecho</button>`}
+          </div>`;
+        }).join('')}
+        ${d.done ? '<p class="center" style="color:var(--accent)">✔ Mazmorra despejada</p>' : ''}</div>`;
+    }
   }
   html += `<div class="win"><div class="win-title">Misiones Secundarias</div>
     ${S.side.length ? '' : '<p class="muted center">Sin misiones. Agregalas en Sistema.</p>'}
@@ -729,7 +847,23 @@ function viewMore() {
     <p class="muted" style="margin-top:0;font-size:15px">Canon: 100 / 100 / 100 / 10 km. Ajustalo a tu nivel real y subilo con el tiempo.</p>
     <div class="grid2">${Object.entries(EXERCISES).map(([k, e]) => `<label>${e.name}${e.unit ? ` (${e.unit})` : ''}
       <input type="number" min="0" step="${k === 'run' ? 0.5 : 1}" data-target="${k}" value="${S.targets[k]}"></label>`).join('')}</div>
-    <label style="display:block;margin-top:10px">Castigo<input id="ptask" value="${esc(S.penaltyTask)}"></label>
+  </div>
+  <div class="win"><div class="win-title">Zona de Castigo</div>
+    <label>Ejercicio de castigo<input id="ptask" value="${esc(S.penaltyTask)}"></label>
+    <div class="grid2" style="margin-top:8px">
+      <label>Duración<select id="bhours">${[1, 2, 4, 8, 12, 24].map((h) => `<option value="${h}" ${S.block.hours === h ? 'selected' : ''}>${h} h${h === 4 ? ' (canon)' : ''}</option>`).join('')}</select></label>
+      <label>Bloqueo<select id="bmode">${Object.entries(BLOCK_MODES).map(([k, l]) => `<option value="${k}" ${S.block.mode === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    </div>
+    <label style="display:block;margin-top:8px">Apps prohibidas<input id="bapps" value="${esc(S.block.apps)}" placeholder="Instagram, TikTok..."></label>
+    ${S.block.mode === 'ios' ? `<label style="display:block;margin-top:8px">Nombre del Atajo<input id="bshort" value="${esc(S.block.shortcut)}"></label>` : ''}
+    <details style="margin-top:10px"><summary class="muted">¿Cómo funciona el bloqueo real?</summary>
+      ${S.block.mode === 'android' ? `<p style="font-size:15px">El botón "Activar bloqueo" abre <b>Bienestar Digital</b>. Ahí activá el <b>Modo concentración</b> con las apps prohibidas: quedan pausadas hasta que lo desactives. Configuralo una vez y después es un toque.</p>`
+      : `<ol style="font-size:15px;padding-left:20px">
+        <li>En la app <b>Atajos</b> creá un atajo llamado <b>${esc(S.block.shortcut)}</b> que reciba texto y lo guarde con <i>Guardar archivo</i> en <code>SL/castigo.txt</code> (reemplazar). Opcional: agregá <i>Activar Concentración</i>.</li>
+        <li>En <b>Automatización → App</b> elegí las apps prohibidas, "Se abre", "Ejecutar inmediatamente".</li>
+        <li>Acciones: <i>Obtener archivo</i> SL/castigo.txt → <i>Obtener fechas</i> → <i>Si</i> la fecha actual es anterior → <i>Mostrar notificación</i> "Estás en la Zona de Castigo" → <i>Ir a pantalla de inicio</i>.</li>
+      </ol><p class="muted" style="font-size:14px">Cuando la app castiga, te pide activar el bloqueo y le pasa al atajo la hora de fin. Pasado ese tiempo, las apps se abren normal solas.</p>`}
+    </details>
   </div>
   <div class="win"><div class="win-title">Nueva Misión Secundaria</div>
     <input id="sqName" placeholder="Ej: Meditar 10 minutos" maxlength="40">
@@ -777,6 +911,12 @@ document.addEventListener('click', (ev) => {
   }
   if (d.ans) { evalDraft.answers[QUESTIONS[evalDraft.step].id] = d.ans; evalDraft.step++; render(); return; }
   if (d.rest) { rest = { end: Date.now() + d.rest * 1000 }; tickTimers(); return; }
+  if (d.dstep) return dungeonStep(Number(d.dstep));
+  if (d.dstart) {
+    const st = S.daily.dungeon.steps[d.dstart];
+    S.daily.dungeon.run = { i: Number(d.dstart), end: Date.now() + st.n * 1000 };
+    save(); render(); return;
+  }
   if (d.del) { S.side = S.side.filter((q) => q.id != d.del); save(); render(); return; }
   switch (b.id) {
     case 'qnext': {
@@ -797,6 +937,11 @@ document.addEventListener('click', (ev) => {
     case 'swReset': S.daily.timer = { acc: 0, start: null }; save(); render(); return;
     case 'claim': return claimDaily();
     case 'survive': return clearPenalty();
+    case 'blockOn': return activateBlock();
+    case 'ptaskDone':
+      S.penalty.taskDone = true; save();
+      if (penaltyLeft() > 0) notify('Notificación', `Ejercicio de castigo completado.\n\nSobrevive ${fmt(penaltyLeft())} más.`, { danger: true });
+      checkPenalty(); render(); return;
     case 'stealth':
       S.mp -= 100; S.stealthUsed = Date.now(); S.penalty = null;
       notify('Notificación', '[Sigilo] activado.\nHas evitado la Zona de Castigo.'); save(); render(); return;
@@ -828,6 +973,10 @@ document.addEventListener('change', (ev) => {
     const v = Math.max(el.dataset.target === 'run' ? 0.5 : 1, Number(el.value) || 0);
     S.targets[el.dataset.target] = v; save();
   }
+  if (el.id === 'bhours') { S.block.hours = Number(el.value); save(); }
+  if (el.id === 'bapps') { S.block.apps = el.value.trim(); save(); }
+  if (el.id === 'bshort') { S.block.shortcut = el.value.trim() || 'SL Castigo'; save(); render(); }
+  if (el.id === 'bmode') { S.block.mode = el.value; save(); render(); }
   if (el.id === 'ptask') { S.penaltyTask = el.value.trim() || defaultState().penaltyTask; save(); }
 });
 
