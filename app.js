@@ -210,6 +210,7 @@ const routineDone = (id) => S.routineLog.some((r) => r.date === today() && r.id 
 function completeRoutine(id) {
   if (routineDone(id)) return;
   S.routineLog.push({ date: today(), id });
+  dayLog().routines = pushUnique(dayLog().routines || [], id);
   const R = ROUTINES[id];
   const xp = gainXP(id === 'monarca' ? 30 : 60);
   decayFatigue();
@@ -344,12 +345,14 @@ function defaultState() {
       { id: 2, name: 'Tomar 2L de agua', xp: 20, stat: 'vit', done: null },
     ],
     sound: true, history: [],
-    profile: null, weights: [], routineLog: [],
+    profile: null, weights: [], routineLog: [], log: null,
   };
 }
 
 let S = load();
 let tab = 'status';
+let calMonth = null; // first day of the month shown in the calendar
+let calSel = null; // selected YYYY-MM-DD
 let evalDraft = null; // { step, answers } while the evaluation is open
 let rest = null; // { end } rest countdown
 
@@ -360,6 +363,14 @@ function load() {
       const st = Object.assign(defaultState(), JSON.parse(raw));
       st.daily.timer = st.daily.timer || { acc: 0, start: null };
       st.block = Object.assign(defaultState().block, st.block);
+      if (!st.log) {
+        // Build the calendar from what older versions already stored.
+        st.log = {};
+        const L = (d) => (st.log[d] = st.log[d] || {});
+        (st.history || []).forEach((d) => { L(d).daily = true; });
+        (st.routineLog || []).forEach((r) => { (L(r.date).routines = L(r.date).routines || []).push(r.id); });
+        (st.weights || []).forEach((w) => { L(w.date).weight = w.kg; });
+      }
       return st;
     }
   } catch (e) { /* ignore */ }
@@ -435,6 +446,12 @@ function ding(danger) {
 
 /* ================= CORE MECHANICS ================= */
 
+function dayLog(d = today()) {
+  S.log = S.log || {};
+  return (S.log[d] = S.log[d] || {});
+}
+const pushUnique = (arr, v) => { if (!arr.includes(v)) arr.push(v); return arr; };
+
 function gainXP(base, source) {
   let mult = 1;
   if (S.hp < maxHP() * 0.3 && hasSkill('Tenacidad')) mult += 0.5;
@@ -446,6 +463,7 @@ function gainXP(base, source) {
   if (titleIs('body')) mult += 0.1;
   const xp = Math.round(base * mult);
   S.xp += xp;
+  dayLog().xp = (dayLog().xp || 0) + xp;
   let ups = 0;
   while (S.xp >= xpNeeded()) {
     S.xp -= xpNeeded();
@@ -487,12 +505,14 @@ function logExercise(k, amount) {
   decayFatigue();
   const p = S.daily.progress;
   p[k] = Math.max(0, Math.round((p[k] + amount) * 10) / 10);
+  dayLog().progress = { ...p };
   if (amount > 0) S.fatigue = Math.min(100, S.fatigue + (k === 'run' ? amount * 4 : amount * 0.15));
 
   // Beyond limits / job change: double every target
   const doubled = Object.keys(S.targets).every((x) => p[x] >= S.targets[x] * 2);
   if (doubled && !S.daily.secret) {
     S.daily.secret = true;
+    dayLog().secret = true;
     const xp = gainXP(150 + S.level * 5, 'daily');
     const g = gainGold(200);
     addItem('box');
@@ -506,6 +526,7 @@ function logExercise(k, amount) {
 function claimDaily() {
   if (S.daily.claimed || !dailyComplete()) return;
   S.daily.claimed = true;
+  dayLog().daily = true;
   S.totalDaily++;
   S.streak++;
   S.bestStreak = Math.max(S.bestStreak, S.streak);
@@ -551,8 +572,17 @@ function rollover() {
   const t = today();
   if (S.daily.date === t) return false;
   const missed = !S.daily.claimed;
+  if (S.awakened && S.daily.date) {
+    const prev = dayLog(S.daily.date);
+    prev.progress = { ...S.daily.progress };
+    prev.targets = { ...S.targets };
+    const secs = Math.round(timerSec());
+    if (secs) prev.timer = secs;
+    if (missed) prev.missed = true;
+  }
   if (missed && S.awakened && S.daily.date) {
     S.streak = 0;
+    dayLog(t).penalty = true;
     S.penalty = { date: t, until: Date.now() + S.block.hours * 3.6e6, taskDone: false };
     const loss = Math.round(maxHP() * (titleIs('overcame') ? 0.25 : 0.5));
     S.hp = Math.max(1, S.hp - loss);
@@ -585,6 +615,7 @@ function checkPenalty() {
 
 function clearPenalty() {
   S.penalty = null;
+  dayLog().survived = true;
   unlockTitle('overcame');
   notify('Notificación', 'Has sobrevivido a la Zona de Castigo.\n\nRegresando al mundo original...');
   save(); render();
@@ -623,6 +654,7 @@ function clearDungeon() {
   if (!d || d.done) return;
   d.done = true;
   S.dungeons++;
+  dayLog().dungeon = d.boss || d.name;
   const xp = gainXP(d.xp, 'dungeon');
   const g = gainGold(150);
   let msg = `${d.boss ? `Has derrotado a <b>${d.boss}</b>.\n` : ''}Has despejado la mazmorra.\n\nXP +${xp}  ·  Oro +${g}`;
@@ -646,6 +678,7 @@ function dungeonStep(i) {
 function completeSide(q) {
   if (q.done === today()) return;
   q.done = today();
+  dayLog().side = pushUnique(dayLog().side || [], q.name);
   const xp = gainXP(q.xp, 'side');
   let g = 0;
   if (hasSkill('Daga Mortal')) g = gainGold(10);
@@ -811,10 +844,79 @@ function logWeight() {
   const kg = Number($('#wkg').value);
   if (!(kg >= 30 && kg <= 300)) return;
   const last = S.weights[S.weights.length - 1];
+  dayLog().weight = kg;
   if (last && last.date === today()) last.kg = kg; else S.weights.push({ date: today(), kg });
   const goal = +S.profile.answers.goalWeight, dir = Math.sign(goal - S.profile.start);
   if (dir === 0 || (kg - goal) * dir >= 0) unlockTitle('body');
   save(); render();
+}
+
+function dayStatus(d) {
+  const L = (S.log || {})[d];
+  if (d === today()) {
+    if (S.daily.claimed) return 'done';
+    return S.penalty ? 'penalty' : 'today';
+  }
+  if (!L) return '';
+  if (L.daily) return 'done';
+  if (L.penalty && !L.survived) return 'penalty';
+  if (L.missed) return 'missed';
+  return L.routines || L.side || L.dungeon ? 'partial' : '';
+}
+
+function viewCalendar() {
+  const now = new Date();
+  if (!calMonth) calMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  if (!calSel) calSel = today();
+  const y = calMonth.getFullYear(), m = calMonth.getMonth();
+  const first = (new Date(y, m, 1).getDay() + 6) % 7;
+  const days = new Date(y, m + 1, 0).getDate();
+  const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+  const monthName = cap(calMonth.toLocaleDateString('es', { month: 'long', year: 'numeric' }));
+  let cells = '<span></span>'.repeat(first);
+  let doneCount = 0;
+  for (let i = 1; i <= days; i++) {
+    const d = today(new Date(y, m, i));
+    const st = dayStatus(d);
+    const L = (S.log || {})[d] || {};
+    if (st === 'done') doneCount++;
+    const marks = (L.secret ? '★' : '') + (L.routines ? '•' : '') + (L.dungeon ? '⚔' : '');
+    cells += `<button class="cal-d ${st} ${d === calSel ? 'sel' : ''} ${d > today() ? 'future' : ''}" data-day="${d}">${i}<small>${marks}</small></button>`;
+  }
+  return `<div class="win"><div class="win-title">Calendario</div>
+    <div class="row"><button class="btn small" data-cal="-1">‹</button>
+      <b>${monthName}</b>
+      <button class="btn small" data-cal="1">›</button></div>
+    <div class="cal">${['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => `<span class="label">${d}</span>`).join('')}${cells}</div>
+    <p class="muted center" style="font-size:13px;margin:6px 0">
+      <span class="cal-key done"></span> Diaria completa <span class="cal-key penalty"></span> Castigo <span class="cal-key partial"></span> Otra actividad
+      · ★ secreta · • rutina · ⚔ mazmorra</p>
+    <div class="row"><span class="label">Diarias completadas este mes</span><b>${doneCount}</b></div>
+    <hr>${viewDay(calSel)}
+  </div>`;
+}
+
+function viewDay(d) {
+  const isToday = d === today();
+  const L = { ...((S.log || {})[d] || {}) };
+  if (isToday) { L.progress = S.daily.progress; L.targets = S.targets; L.daily = S.daily.claimed; L.timer = Math.round(timerSec()); }
+  const date = new Date(d + 'T12:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, (c) => c.toUpperCase());
+  const rows = [];
+  if (L.daily) rows.push('✔ Misión diaria completada');
+  else if (L.progress && L.targets)
+    rows.push(`${isToday ? '◻ Misión diaria en curso' : '✖ Misión diaria incompleta'}: ` +
+      Object.entries(EXERCISES).map(([k, e]) => `${e.name} ${L.progress[k] || 0}/${L.targets[k]}${e.unit}`).join(' · '));
+  else if (L.missed) rows.push('✖ Misión diaria incompleta');
+  if (L.secret) rows.push('★ Misión secreta: Superar los límites');
+  (L.routines || []).forEach((id) => rows.push(`• Rutina: ${ROUTINES[id] ? ROUTINES[id].name : id}`));
+  (L.side || []).forEach((n) => rows.push(`◆ ${esc(n)}`));
+  if (L.dungeon) rows.push(`⚔ Mazmorra despejada: ${L.dungeon}`);
+  if (L.penalty) rows.push(L.survived ? '☠ Zona de Castigo: sobreviviste' : '☠ Zona de Castigo');
+  if (L.timer) rows.push(`⏱ Tiempo entrenado: ${fmt(L.timer)}`);
+  if (L.weight) rows.push(`⚖ Peso: ${L.weight} kg`);
+  if (L.xp) rows.push(`<span class="gold">XP ganada: ${L.xp}</span>`);
+  return `<div class="label">${date}</div>
+    ${rows.length ? rows.map((r) => `<div style="padding:3px 0">${r}</div>`).join('') : `<p class="muted">${d > today() ? 'Todavía no llegó.' : 'Sin actividad registrada.'}</p>`}`;
 }
 
 function viewProfile() {
@@ -867,6 +969,7 @@ function viewStatus() {
     <div class="row"><span class="label">Racha</span><b>${S.streak} días (mejor: ${S.bestStreak})</b></div>
     ${S.shadows.length ? `<div class="row"><span class="label">Ejército de sombras</span><b style="color:var(--purple)">${S.shadows.length}</b></div>` : ''}
   </div>
+  ${viewCalendar()}
   ${viewProfile()}
   <div class="win"><div class="win-title">Habilidades</div>
     ${SKILLS.map((s) => {
@@ -1067,6 +1170,8 @@ document.addEventListener('click', (ev) => {
   if (d.ans) { evalDraft.answers[QUESTIONS[evalDraft.step].id] = d.ans; evalDraft.step++; render(); return; }
   if (d.rest) { rest = { end: Date.now() + d.rest * 1000, label: d.label }; tickTimers(); return; }
   if (d.routine) return completeRoutine(d.routine);
+  if (d.day) { calSel = d.day; render(); return; }
+  if (d.cal) { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + Number(d.cal), 1); render(); return; }
   if (d.dstep) return dungeonStep(Number(d.dstep));
   if (d.dstart) {
     const st = S.daily.dungeon.steps[d.dstart];

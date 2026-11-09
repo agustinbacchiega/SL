@@ -127,3 +127,17 @@ hr { border: 0; border-top: 1px solid rgba(63, 182, 255, 0.3); margin: 12px 0; }
 .routine summary::-webkit-details-marker { display: none; }
 .routine summary::before { content: "▸ "; color: var(--accent); }
 .routine[open] summary::before { content: "▾ "; }
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; text-align: center; }
+.cal-d { aspect-ratio: 1; border: 1px solid rgba(63,182,255,.25); border-radius: 4px; background: none; padding: 0;
+  font-weight: 600; font-size: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+.cal-d small { font-size: 10px; color: var(--gold); min-height: 10px; margin-top: 2px; }
+.cal-d.done { background: rgba(63,182,255,.3); border-color: var(--line); box-shadow: 0 0 6px var(--glow); }
+.cal-d.penalty, .cal-d.missed { background: rgba(255,77,94,.25); border-color: var(--red); }
+.cal-d.partial { border-color: var(--purple); }
+.cal-d.today { border-color: var(--accent); }
+.cal-d.future { opacity: .35; }
+.cal-d.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cal-key { display: inline-block; width: 10px; height: 10px; border: 1px solid var(--line); border-radius: 2px; vertical-align: middle; }
+.cal-key.done { background: rgba(63,182,255,.5); }
+.cal-key.penalty { background: rgba(255,77,94,.5); border-color: var(--red); }
+.cal-key.partial { border-color: var(--purple); }
