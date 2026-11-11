@@ -192,3 +192,6 @@ body.varka { --c1: #249a80; --c2: #b8862a; }
 body.varka.gm:not(.penalty) { --line: #e8c46a; --glow: rgba(232, 196, 106, 0.45); --accent: #fff1c9; }
 body.varka.gm:not(.penalty) .bar > i { background: linear-gradient(90deg, #a77d1e, #fff1c9); }
 .gm-win { border-color: #e8c46a; box-shadow: 0 0 16px rgba(232, 196, 106, .45), inset 0 0 22px rgba(232, 196, 106, .12); }
+
+body { overflow-x: hidden; }
+#app { will-change: transform; }

@@ -2655,26 +2655,69 @@ function maybeRemind() {
 
 /* ================= SWIPE BETWEEN TABS ================= */
 
+// The page follows the finger; on release it either slides to the neighbour tab
+// or springs back. Any drag also swallows the click that would otherwise hit a button.
 let swipe = null;
+let suppressClickUntil = 0;
+
+const visibleTabs = () => [...document.querySelectorAll('#tabs button')].filter((b) => !b.hidden).map((b) => b.dataset.tab);
+
+function slideApp(x, ms) {
+  const app = $('#app');
+  app.style.transition = ms ? `transform ${ms}ms cubic-bezier(.2,.7,.3,1)` : 'none';
+  app.style.transform = x ? `translate3d(${x}px,0,0)` : '';
+}
+
 document.addEventListener('touchstart', (ev) => {
   const t = ev.touches[0];
-  // Ignore when a modal, the guided workout or the evaluation is open, or when touching form fields.
   if (ev.touches.length !== 1 || !$('#overlay').hidden || $('#tabs').hidden || ev.target.closest('input, textarea, select')) { swipe = null; return; }
-  swipe = { x: t.clientX, y: t.clientY, at: Date.now() };
+  swipe = { x: t.clientX, y: t.clientY, at: Date.now(), axis: null, dx: 0 };
 }, { passive: true });
 
-document.addEventListener('touchend', (ev) => {
+document.addEventListener('touchmove', (ev) => {
   if (!swipe) return;
-  const t = ev.changedTouches[0];
-  const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y, dt = Date.now() - swipe.at;
+  const t = ev.touches[0];
+  const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+  if (!swipe.axis) {
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+    swipe.axis = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'x' : 'y';
+    suppressClickUntil = Date.now() + 500;
+  }
+  if (swipe.axis !== 'x') return;
+  ev.preventDefault(); // keep the page from scrolling vertically mid-swipe
+  const tabs = visibleTabs(), i = tabs.indexOf(tab);
+  const edge = (dx > 0 && i === 0) || (dx < 0 && i === tabs.length - 1);
+  swipe.dx = dx;
+  slideApp(edge ? dx * 0.25 : dx, 0);
+}, { passive: false });
+
+document.addEventListener('touchend', () => {
+  if (!swipe) return;
+  const sw = swipe;
   swipe = null;
-  if (dt > 600 || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
-  const tabs = [...document.querySelectorAll('#tabs button')].filter((b) => !b.hidden).map((b) => b.dataset.tab);
-  const i = tabs.indexOf(tab) + (dx < 0 ? 1 : -1);
-  if (i < 0 || i >= tabs.length) return;
-  tab = tabs[i];
-  render(); window.scrollTo(0, 0);
-}, { passive: true });
+  if (sw.axis) suppressClickUntil = Date.now() + 400;
+  if (sw.axis !== 'x') return;
+  const W = window.innerWidth, v = Math.abs(sw.dx) / Math.max(1, Date.now() - sw.at);
+  const tabs = visibleTabs(), i = tabs.indexOf(tab) + (sw.dx < 0 ? 1 : -1);
+  const far = Math.abs(sw.dx) >= W * 0.25, flick = v >= 0.5 && Math.abs(sw.dx) >= 60;
+  if (i < 0 || i >= tabs.length || !(far || flick)) { slideApp(0, 220); return; }
+  const dir = sw.dx < 0 ? -1 : 1;
+  slideApp(dir * W, 160);
+  setTimeout(() => {
+    tab = tabs[i];
+    render(); window.scrollTo(0, 0);
+    slideApp(-dir * W * 0.35, 0);
+    $('#app').getBoundingClientRect(); // commit the start position before animating in
+    slideApp(0, 220);
+  }, 160);
+});
+
+document.addEventListener('touchcancel', () => { if (swipe && swipe.axis === 'x') slideApp(0, 220); swipe = null; });
+
+// Capture phase: runs before the app's own click handlers.
+document.addEventListener('click', (ev) => {
+  if (Date.now() < suppressClickUntil) { ev.stopPropagation(); ev.preventDefault(); }
+}, true);
 
 /* ================= BOOT ================= */
 
