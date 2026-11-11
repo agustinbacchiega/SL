@@ -2653,6 +2653,29 @@ function maybeRemind() {
     .catch(() => new Notification('[ADVERTENCIA]', { body }));
 }
 
+/* ================= SWIPE BETWEEN TABS ================= */
+
+let swipe = null;
+document.addEventListener('touchstart', (ev) => {
+  const t = ev.touches[0];
+  // Ignore when a modal, the guided workout or the evaluation is open, or when touching form fields.
+  if (ev.touches.length !== 1 || !$('#overlay').hidden || $('#tabs').hidden || ev.target.closest('input, textarea, select')) { swipe = null; return; }
+  swipe = { x: t.clientX, y: t.clientY, at: Date.now() };
+}, { passive: true });
+
+document.addEventListener('touchend', (ev) => {
+  if (!swipe) return;
+  const t = ev.changedTouches[0];
+  const dx = t.clientX - swipe.x, dy = t.clientY - swipe.y, dt = Date.now() - swipe.at;
+  swipe = null;
+  if (dt > 600 || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+  const tabs = [...document.querySelectorAll('#tabs button')].filter((b) => !b.hidden).map((b) => b.dataset.tab);
+  const i = tabs.indexOf(tab) + (dx < 0 ? 1 : -1);
+  if (i < 0 || i >= tabs.length) return;
+  tab = tabs[i];
+  render(); window.scrollTo(0, 0);
+}, { passive: true });
+
 /* ================= BOOT ================= */
 
 rollover();
