@@ -719,7 +719,10 @@ function ding(danger) {
 
 /* ================= CORE MECHANICS ================= */
 
-function dayLog(d = today()) {
+// While auto-claiming yesterday's quest after midnight, logs go to that day.
+let logDay = null;
+let autoClaim = false;
+function dayLog(d = logDay || today()) {
   S.log = S.log || {};
   return (S.log[d] = S.log[d] || {});
 }
@@ -837,7 +840,7 @@ function claimDaily() {
   }
   notify('Misión Diaria', `Has completado la misión diaria\n[Preparativos para volverse poderoso].\n\nRecompensas:\n• Recuperación total\n• Puntos de habilidad +3\n• Caja Aleatoria ×1\n• XP +${xp}  ·  Oro +${g}${extra}`);
   if (S.profile && S.totalDaily % 7 === 0) raiseDifficulty();
-  if (new Date().getHours() < 7) unlockTitle('early');
+  if (!autoClaim && new Date().getHours() < 7) unlockTitle('early');
   if (S.streak >= 7) unlockTitle('iron');
   if (S.streak >= 30) unlockTitle('demon');
   save(); render();
@@ -863,6 +866,12 @@ function completeJobChange() {
 function rollover() {
   const t = today();
   if (S.daily.date === t) return false;
+  // Every target done but the reward never claimed: claim it instead of punishing.
+  if (S.awakened && S.profile && !S.daily.claimed && dailyComplete()) {
+    notify('Notificación', 'Completaste la misión diaria pero no reclamaste las recompensas.\n\nEl Sistema las reclamó por vos.');
+    logDay = S.daily.date; autoClaim = true;
+    try { claimDaily(); } finally { logDay = null; autoClaim = false; }
+  }
   const missed = !S.daily.claimed;
   if (S.awakened && S.daily.date) {
     const prev = dayLog(S.daily.date);
