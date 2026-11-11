@@ -43,6 +43,15 @@ La pestaña *Rutinas* arma un **plan semanal** según tu evaluación: objetivo, 
 
 Las repeticiones y series se ajustan a tu nivel, la cantidad de ejercicios a tu tiempo, y si tenés una lesión se reemplazan los ejercicios de riesgo (marcados como *adaptado*). Los ejercicios por tiempo tienen cuenta regresiva. Completar una rutina da XP.
 
+## Progresión extra
+
+- **Curva de niveles**: pensada para llegar al nivel 100 en alrededor de un año a un año y medio de constancia.
+- **Habilidades equipables**: 3 ranuras, 4 desde el nivel 25 y 5 tras el cambio de clase. Hay 12 habilidades que se desbloquean por nivel, más la de clase.
+- **Mazmorras raras**: Puertas Rojas (3 oleadas, más XP) y la Mazmorra Doble (muy rara), con jefes variados por rango.
+- **Eventos aleatorios**: misiones de emergencia con tiempo límite, comerciante con descuentos, puertas con llaves gratis, bendiciones de XP y cofres.
+- **Pruebas de fuerza**: flexiones máximas, sentadillas en 1 minuto, plancha, burpees en 3 minutos y 1 km. Registran récords y desbloquean títulos.
+- **Logros** con 4 o 5 niveles cada uno y recompensas, y **títulos con requisitos visibles** (salvo los secretos).
+
 ## Bloqueo de apps en el castigo
 
 Una app web no puede bloquear otras apps por sí sola, así que se apoya en el sistema del teléfono (configurable en *Sistema → Zona de Castigo*):

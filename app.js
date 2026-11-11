@@ -36,20 +36,38 @@ const ITEMS = {
 const TITLES = {
   overcame: { name: 'El que Superó la Adversidad', desc: 'Sobreviviste a la Zona de Castigo.', bonus: 'HP perdido en castigos -50%' },
   wolf: { name: 'Cazador de Lobos', desc: 'Despejaste 3 mazmorras instantáneas.', bonus: 'XP de mazmorras +40%' },
-  early: { name: 'Coraje del Débil', desc: 'Misión secreta: completar la misión diaria antes de las 7:00.', bonus: 'XP diaria +10%' },
+  early: { name: 'Coraje del Débil', desc: 'Misión secreta: completar la misión diaria antes de las 7:00.', bonus: 'XP diaria +10%', secret: true },
   iron: { name: 'Voluntad Inquebrantable', desc: '7 misiones diarias seguidas.', bonus: 'XP diaria +15%' },
   demon: { name: 'Cazador de Demonios', desc: '30 misiones diarias seguidas.', bonus: 'Oro +50%' },
   beyond: { name: 'El que Superó sus Límites', desc: 'Superaste el doble de los objetivos diarios en un día.', bonus: 'XP de misiones secundarias +25%' },
   body: { name: 'Cuerpo Despertado', desc: 'Alcanzaste tu peso objetivo.', bonus: 'Todas las estadísticas se sienten más ligeras (XP +10%)' },
+  red: { name: 'Superviviente de la Puerta Roja', desc: 'Despejar una Puerta Roja (mazmorra rara).', bonus: 'XP de mazmorras +20%' },
+  double: { name: 'Elegido del Templo', desc: 'Sobreviviste a la Mazmorra Doble.', bonus: 'Toda la XP +15%', secret: true },
+  conqueror: { name: 'Conquistador de Mazmorras', desc: 'Despejar 25 mazmorras.', bonus: 'Oro +25%' },
+  disciplined: { name: 'Disciplinado', desc: 'Completar 50 rutinas.', bonus: 'XP de rutinas +25%' },
+  responder: { name: 'Respuesta Inmediata', desc: 'Superar 10 misiones de emergencia.', bonus: 'XP de emergencias +50%' },
+  legend: { name: 'Leyenda Viviente', desc: '100 misiones diarias seguidas.', bonus: 'Toda la XP +20%' },
+  fist: { name: 'Puño de Hierro', desc: 'Prueba de fuerza: 50 flexiones seguidas.', bonus: 'XP de pruebas de fuerza +25%' },
+  legs: { name: 'Piernas de Acero', desc: 'Prueba de fuerza: 50 sentadillas en 1 minuto.', bonus: 'XP de pruebas de fuerza +25%' },
+  wall: { name: 'Muro Inamovible', desc: 'Prueba de fuerza: 3 minutos de plancha.', bonus: 'XP de pruebas de fuerza +25%' },
+  engine: { name: 'Motor Incansable', desc: 'Prueba de fuerza: 60 burpees en 3 minutos.', bonus: 'XP de pruebas de fuerza +25%' },
+  wind: { name: 'Pies de Viento', desc: 'Prueba de fuerza: 1 km en menos de 4:30.', bonus: 'XP de pruebas de fuerza +25%' },
   monarch: { name: 'Monarca de las Sombras', desc: 'Alcanzaste el nivel 100.', bonus: 'Toda la XP +25%' },
 };
 
 const SKILLS = [
   { lv: 1, name: 'Tenacidad', type: 'Pasiva', desc: 'Mientras el HP esté bajo el 30%, la XP obtenida aumenta un 50%.' },
   { lv: 5, name: 'Sprint', type: 'Activa', desc: 'Cada km corrido otorga +10% de XP extra.' },
+  { lv: 8, name: 'Ojo del Mercader', type: 'Pasiva', desc: 'Los precios de la tienda bajan un 15%.' },
   { lv: 10, name: 'Sed de Sangre', type: 'Activa', desc: 'Las mazmorras instantáneas otorgan +1 Caja Aleatoria.' },
+  { lv: 12, name: 'Respiración Profunda', type: 'Pasiva', desc: 'Las rutinas otorgan +20 XP.' },
+  { lv: 15, name: 'Instinto del Cazador', type: 'Pasiva', desc: 'Los eventos aleatorios aparecen más seguido y las mazmorras raras son más probables.' },
   { lv: 20, name: 'Sigilo', type: 'Activa', desc: 'Una vez por semana, evita un castigo (consume 100 MP).' },
+  { lv: 25, name: 'Fortuna', type: 'Pasiva', desc: 'Las Cajas Aleatorias dan mejores objetos.' },
   { lv: 30, name: 'Daga Mortal', type: 'Activa', desc: 'Las misiones secundarias otorgan +10 de oro.' },
+  { lv: 35, name: 'Regeneración', type: 'Pasiva', desc: 'La fatiga baja el doble de rápido.' },
+  { lv: 45, name: 'Autoridad del Gobernante', type: 'Activa', desc: 'Todo el oro obtenido aumenta un 20%.' },
+  { lv: 55, name: 'Intención Asesina', type: 'Activa', desc: 'Las pruebas de fuerza otorgan el doble de XP.' },
   { job: true, name: 'Extracción de Sombras', type: 'Clase', desc: '"¡Levántate!" Al completar la diaria, invoca una sombra al ejército (cosmético).' },
 ];
 
@@ -60,6 +78,23 @@ const DUNGEONS = [
   { name: 'Mazmorra de rango B', boss: 'Cerbero, Guardián del Castillo', xp: 300, m: 2.5 },
   { name: 'Mazmorra de rango A', boss: 'Vulcan, Señor de los Demonios', xp: 350, m: 3 },
   { name: 'Castillo del Demonio', boss: 'Baran, el Rey Demonio', xp: 500, m: 4 },
+];
+
+const BOSSES = [
+  ['Lycan de Colmillos de Acero', 'Goblin Hechicero', 'Araña Gigante de la Cueva'],
+  ['Kasaka, la Serpiente Venenosa', 'Hobgoblin Jefe', 'Lobo de Escarcha'],
+  ['Caballero Sangriento Igris', 'Orco Chamán', 'Golem de Piedra'],
+  ['Cerbero, Guardián del Castillo', 'Kargalgan, Chamán de los Alto Orcos', 'Reina de las Hormigas'],
+  ['Vulcan, Señor de los Demonios', 'Baruka, el Elfo de Hielo', 'Metus, el Liche'],
+  ['Baran, el Rey Demonio', 'El Rey Hormiga', 'Kamish, el Dragón'],
+];
+const BOSSES_VARKA = [
+  ['Mitachurl con escudo', 'Mago Abismal de Hidro', 'Slime Anemo gigante'],
+  ['Lawachurl de Piedra', 'Cazadores de Tesoros Fatui', 'Lobo de Wolvendom'],
+  ['Heraldo del Abismo', 'Agente Pirotécnico Fatui', 'Guardián de las Ruinas'],
+  ['Hipóstasis Anemo', 'Regisvine Criogénica', 'Cazador de las Ruinas'],
+  ['Dvalin, el Dragón del Viento', 'Hipóstasis Criogénica', 'Lector del Abismo'],
+  ['Andrius, Señor de los Lobos', 'Dvalin enfurecido', 'Heraldo del Abismo Supremo'],
 ];
 
 // [name, base amount, unit, type, injuries to avoid]
@@ -88,18 +123,29 @@ function makeDungeon(tier) {
   const pool = EX_POOL.filter((e) => !e[4].includes(a.injury));
   const prefer = { fat: 'cardio', endurance: 'cardio', muscle: 'str', recomp: 'str' }[a.goal];
   const weighted = pool.flatMap((e) => (e[3] === prefer ? [e, e, e] : [e]));
+  const r = Math.random(), luck = hasSkill('Instinto del Cazador') ? 0.06 : 0;
+  const variant = r < 0.07 + luck ? 'double' : r < 0.27 + luck * 2 ? 'red' : 'normal';
+  const waves = variant === 'normal' ? 2 : 3;
+  const vm = variant === 'normal' ? 1 : 1.3;
   const picked = [];
-  while (picked.length < 2) {
+  while (picked.length < waves) {
     const e = weighted[Math.floor(Math.random() * weighted.length)];
     if (!picked.includes(e)) picked.push(e);
   }
   const timed = pool.filter((e) => e[2] === 'sec' && !picked.includes(e));
   const boss = timed[Math.floor(Math.random() * timed.length)];
   const step = (e, mult) => {
-    const n = e[2] === 'sec' ? Math.round((e[1] * D.m * mult) / 15) * 15 : Math.round(e[1] * D.m * mult);
+    const n = e[2] === 'sec' ? Math.round((e[1] * D.m * mult * vm) / 15) * 15 : Math.round(e[1] * D.m * mult * vm);
     return { name: e[0], n, unit: e[2], done: false };
   };
-  return { name: D.name, boss: D.boss, xp: D.xp, steps: [step(picked[0], 1), step(picked[1], 1), step(boss, 1.5)], run: null, done: false };
+  const bosses = (S.theme === 'varka' ? BOSSES_VARKA : BOSSES)[tier];
+  return {
+    name: variant === 'double' ? 'Mazmorra Doble: Templo de Cartenon' : (variant === 'red' ? 'Puerta Roja · ' : '') + D.name,
+    variant,
+    boss: variant === 'double' ? 'La Estatua de Dios' : bosses[Math.floor(Math.random() * bosses.length)],
+    xp: Math.round(D.xp * { normal: 1, red: 1.6, double: 2.5 }[variant]),
+    steps: [...picked.map((e) => step(e, 1)), step(boss, 1.5)], run: null, done: false,
+  };
 }
 
 const stepText = (st) => (st.unit === 'sec' ? `${st.name}: ${fmtMin(st.n)}` : `${st.n} × ${st.name}`);
@@ -284,7 +330,7 @@ function completeRoutine(id) {
   S.routineLog.push({ date: today(), id });
   dayLog().routines = pushUnique(dayLog().routines || [], id);
   const R = ALL_ROUTINES()[id];
-  const xp = gainXP(isRestRoutine(id) ? 30 : 60);
+  const xp = gainXP((isRestRoutine(id) ? 30 : 60) + (hasSkill('Respiración Profunda') ? 20 : 0), 'routine');
   decayFatigue();
   if (isRestRoutine(id)) S.fatigue = Math.max(0, S.fatigue - 30);
   else S.fatigue = Math.min(100, S.fatigue + 15);
@@ -329,6 +375,7 @@ function viewRoutines() {
     ${rec.filter((id) => id !== todayId).map((id) => routineCard(id)).join('')}
     ${todayId !== RSET().rest ? routineCard(RSET().rest) : ''}
   </div>
+  ${viewTests()}
   <div class="win"><div class="win-title">Otras Rutinas</div>
     ${Object.keys(RSET().lib).filter((id) => !rec.includes(id) && id !== RSET().rest && id !== todayId).map((id) => routineCard(id)).join('')}
   </div>`;
@@ -337,6 +384,19 @@ function viewRoutines() {
 // Hidden theme: Knights of Favonius (Varka, Genshin Impact). Pure text/color reskin;
 // mechanics and saved progress are shared with the default System theme.
 const VARKA = [
+  ['Ojo del Mercader', 'Ojo del Comerciante'],
+  ['Autoridad del Gobernante', 'Autoridad del Gran Maestro'],
+  ['Intención Asesina', 'Presión del Mandoble'],
+  ['Instinto del Cazador', 'Instinto del Explorador'],
+  ['Templo de Cartenon', 'Templo Olvidado del Espinadragón'],
+  ['La Estatua de Dios', 'El Guardián Olvidado'],
+  ['Puerta Roja', 'Dominio Sellado'],
+  ['Misión de Emergencia', 'Encargo Urgente'],
+  ['Comerciante ambulante', 'Mercader de Liyue de paso'],
+  ['comerciante ambulante', 'mercader de Liyue de paso'],
+  ['Bendición del Sistema', 'Bendición de Barbatos'],
+  ['Pruebas de Fuerza', 'Pruebas de la Orden'],
+  ['Prueba de Fuerza', 'Prueba de la Orden'],
   ['la misión diaria', 'el entrenamiento de Favonius'],
   ['La misión diaria', 'El entrenamiento de Favonius'],
   ['Preparativos para volverse poderoso', 'Régimen del Gran Maestro Varka'],
@@ -500,6 +560,7 @@ function defaultState() {
     sound: true, history: [],
     profile: null, weights: [], routineLog: [], log: null,
     theme: 'sl', themeUnlocked: false,
+    equipped: null, event: null, eventDay: null, tests: {}, prs: 0, emergencies: 0, sideDone: 0, ach: {},
   };
 }
 
@@ -517,6 +578,7 @@ function load() {
       const st = Object.assign(defaultState(), JSON.parse(raw));
       st.daily.timer = st.daily.timer || { acc: 0, start: null };
       st.block = Object.assign(defaultState().block, st.block);
+      st.tests = st.tests || {};
       if (!st.log) {
         // Build the calendar from what older versions already stored.
         st.log = {};
@@ -531,6 +593,7 @@ function load() {
   return defaultState();
 }
 function save() {
+  checkAchievements();
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
 }
 
@@ -538,7 +601,8 @@ function save() {
 
 const maxHP = () => 100 + (S.level - 1) * 20 + (S.stats.vit - 10) * 10;
 const maxMP = () => 10 + (S.level - 1) * 5 + (S.stats.int - 10) * 10;
-const xpNeeded = (lv = S.level) => Math.round(100 + 40 * lv + 2 * lv * lv);
+// Tuned so level 100 takes roughly 1–1.5 years of steady daily play.
+const xpNeeded = (lv = S.level) => Math.round(60 + 15 * lv + 0.25 * lv * lv);
 const RANKS_VARKA = ['Recluta', 'Escudero', 'Caballero', 'Caballero de Élite', 'Capitán', 'Gran Maestro Adjunto', 'Gran Maestro'];
 const rank = () => {
   const i = RANKS.filter(([lv]) => S.level >= lv).length - 1;
@@ -563,12 +627,17 @@ const VARKA_LETTERS = [
   'Hoy un recluta me preguntó cuál es el secreto de la fuerza. Le respondí: repetirlo mañana.',
 ];
 const letterOfDay = () => VARKA_LETTERS[[...today()].reduce((h, c) => h + c.charCodeAt(0), 0) % VARKA_LETTERS.length];
-const hasSkill = (name) => SKILLS.some((s) => s.name === name && (s.job ? S.job !== 'Ninguno' : S.level >= s.lv));
+const skillUnlocked = (s) => (s.job ? S.job !== 'Ninguno' : S.level >= s.lv);
+const maxSlots = () => 3 + (S.level >= 25 ? 1 : 0) + (S.job !== 'Ninguno' ? 1 : 0);
+const hasSkill = (name) => SKILLS.some((s) => s.name === name && skillUnlocked(s) && (s.job || (S.equipped || []).includes(name)));
+function ensureEquipped() {
+  if (!Array.isArray(S.equipped)) S.equipped = SKILLS.filter((s) => !s.job && skillUnlocked(s)).slice(0, maxSlots()).map((s) => s.name);
+}
 const titleIs = (id) => S.title === id;
 
 function decayFatigue() {
   const hours = (Date.now() - S.fatigueAt) / 3.6e6;
-  S.fatigue = Math.max(0, S.fatigue - hours * 8);
+  S.fatigue = Math.max(0, S.fatigue - hours * (hasSkill('Regeneración') ? 16 : 8));
   S.fatigueAt = Date.now();
 }
 
@@ -639,6 +708,13 @@ function gainXP(base, source) {
   if (source === 'side' && titleIs('beyond')) mult += 0.25;
   if (titleIs('monarch')) mult += 0.25;
   if (titleIs('body')) mult += 0.1;
+  if (source === 'dungeon' && titleIs('red')) mult += 0.2;
+  if (titleIs('double')) mult += 0.15;
+  if (titleIs('legend')) mult += 0.2;
+  if (source === 'routine' && titleIs('disciplined')) mult += 0.25;
+  if (source === 'emergency' && titleIs('responder')) mult += 0.5;
+  if (source === 'test' && ['fist', 'legs', 'wall', 'engine', 'wind'].includes(S.title)) mult += 0.25;
+  if (S.event && S.event.type === 'blessing' && S.event.date === today()) mult += 0.5;
   const xp = Math.round(base * mult);
   S.xp += xp;
   dayLog().xp = (dayLog().xp || 0) + xp;
@@ -652,6 +728,7 @@ function gainXP(base, source) {
     S.hp = maxHP(); S.mp = maxMP(); S.fatigue = 0;
     notify('Notificación', `¡Subiste de nivel!\n\nNivel ${S.level - ups} → <b>${S.level}</b>\nPuntos de habilidad +${ups * 5}\n\nHP, MP y Fatiga restaurados.`);
     SKILLS.forEach((sk) => {
+      if (!sk.job && sk.lv > S.level - ups && sk.lv <= S.level && S.equipped && S.equipped.length < maxSlots()) S.equipped.push(sk.name);
       if (!sk.job && sk.lv > S.level - ups && sk.lv <= S.level)
         notify('Notificación', `Has adquirido una nueva habilidad:\n<b>[${sk.name}]</b>\n\n${sk.desc}`);
     });
@@ -665,7 +742,7 @@ function gainXP(base, source) {
 }
 
 function gainGold(n) {
-  const g = Math.round(n * (titleIs('demon') ? 1.5 : 1));
+  const g = Math.round(n * (1 + (titleIs('demon') ? 0.5 : 0) + (titleIs('conqueror') ? 0.25 : 0) + (hasSkill('Autoridad del Gobernante') ? 0.2 : 0)));
   S.gold += g;
   return g;
 }
@@ -803,7 +880,9 @@ function useItem(id) {
   if (!S.inventory[id]) return;
   S.inventory[id]--;
   if (id === 'box') {
-    const pool = ['hp', 'hp', 'mp', 'fat', 'fat', 'key', 'key', 'gold', 'gold', 'gold', 'stone'];
+    const pool = hasSkill('Fortuna')
+      ? ['hp', 'mp', 'fat', 'key', 'key', 'key', 'gold', 'gold', 'stone', 'stone']
+      : ['hp', 'hp', 'mp', 'fat', 'fat', 'key', 'key', 'gold', 'gold', 'gold', 'stone'];
     const r = pool[Math.floor(Math.random() * pool.length)];
     if (r === 'gold') {
       const g = gainGold(100 + Math.floor(Math.random() * 400));
@@ -820,8 +899,9 @@ function useItem(id) {
     if (S.daily.dungeon) { addItem('key'); notify('Notificación', 'Ya hay una mazmorra abierta hoy.'); }
     else {
       const tier = Math.min(DUNGEONS.length - 1, Math.floor(S.dungeons / 3));
-      S.daily.dungeon = makeDungeon(tier);
-      notify('Mazmorra Instantánea', `Has entrado a: <b>${DUNGEONS[tier].name}</b>\n\nDerrota 2 oleadas y al jefe:\n<b>${DUNGEONS[tier].boss}</b>\n\nRecompensa: ${DUNGEONS[tier].xp} XP\nEstá en la pestaña Misiones.`);
+      const nd = (S.daily.dungeon = makeDungeon(tier));
+      const intro = { normal: '', red: '⚠ ¡Es una <b>Puerta Roja</b>! No hay salida hasta derrotar al jefe.\n\n', double: '⚠⚠ Algo no está bien... Esta es una <b>Mazmorra Doble</b>.\n\n' }[nd.variant];
+      notify('Mazmorra Instantánea', `${intro}Has entrado a: <b>${nd.name}</b>\n\nDerrota ${nd.steps.length - 1} oleadas y al jefe:\n<b>${nd.boss}</b>\n\nRecompensa: ${nd.xp} XP\nEstá en la pestaña Misiones.`, { danger: nd.variant !== 'normal' });
     }
   }
   save(); render();
@@ -839,6 +919,8 @@ function clearDungeon() {
   if (hasSkill('Sed de Sangre')) { addItem('box'); msg += '\nCaja Aleatoria ×1'; }
   if (d.boss && Math.random() < 0.25) { addItem('key'); msg += '\n🗝️ Botín del jefe: Llave de Mazmorra'; }
   notify('Mazmorra Despejada', msg);
+  if (d.variant === 'red') unlockTitle('red');
+  if (d.variant === 'double') { addItem('stone'); notify('Notificación', 'Has sobrevivido a la Mazmorra Doble.\n\nRecompensa especial: 💠 Piedra Rúnica'); unlockTitle('double'); }
   if (S.dungeons >= 3) unlockTitle('wolf');
   save(); render();
 }
@@ -856,12 +938,192 @@ function dungeonStep(i) {
 function completeSide(q) {
   if (q.done === today()) return;
   q.done = today();
+  S.sideDone = (S.sideDone || 0) + 1;
   dayLog().side = pushUnique(dayLog().side || [], q.name);
   const xp = gainXP(q.xp, 'side');
   let g = 0;
   if (hasSkill('Daga Mortal')) g = gainGold(10);
   notify('Misión Completada', `[${q.name}]\n\nXP +${xp}${g ? `  ·  Oro +${g}` : ''}`);
   save(); render();
+}
+
+/* ================= EVENTS, TESTS, ACHIEVEMENTS ================= */
+
+// Accepts "72,5" as well as "72.5" (phone keyboards in Spanish use a comma).
+const num = (v) => Number(String(v).trim().replace(',', '.'));
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+function priceOf(id) {
+  let pr = ITEMS[id].price * (hasSkill('Ojo del Mercader') ? 0.85 : 1);
+  const ev = S.event;
+  if (ev && ev.type === 'merchant' && ev.item === id && ev.date === today() && !ev.done) pr *= 0.5;
+  return Math.round(pr);
+}
+
+function rollEvent() {
+  if (!S.awakened || !S.profile || S.eventDay === today()) return;
+  S.eventDay = today();
+  S.event = null;
+  if (Math.random() >= 0.35 + (hasSkill('Instinto del Cazador') ? 0.15 : 0)) { save(); return; }
+  const type = pick(['emergency', 'emergency', 'merchant', 'gate', 'blessing', 'chest']);
+  const ev = { date: today(), type, done: false };
+  if (type === 'emergency') {
+    const e = pick(EX_POOL.filter((x) => !x[4].includes(S.profile.answers.injury)));
+    const m = 1 + Math.min(S.level, 60) / 30;
+    ev.task = e[2] === 'sec' ? `${e[0]}: ${fmtMin(Math.round((e[1] * m) / 15) * 15)}` : `${Math.round(e[1] * m)} × ${e[0]}`;
+    ev.until = Date.now() + 2 * 3.6e6;
+    notify('Misión de Emergencia', `[Misión de Emergencia]\n\n<b>${ev.task}</b>\n\nTiempo límite: 2 horas\nRecompensa: XP +120 · Caja Aleatoria`, { danger: true });
+  } else if (type === 'merchant') {
+    ev.item = pick(['hp', 'mp', 'fat', 'key', 'box', 'stone']);
+    notify('Evento', `Un comerciante ambulante apareció.\n\nHoy: ${ITEMS[ev.item].ico} <b>${ITEMS[ev.item].name}</b> a mitad de precio en la Tienda.`);
+  } else if (type === 'gate') {
+    addItem('key'); ev.done = true;
+    notify('Evento', 'Una puerta apareció cerca de vos.\n\nHas obtenido:\n🗝️ <b>[Llave de Mazmorra Instantánea]</b>');
+  } else if (type === 'blessing') {
+    notify('Evento', '[Bendición del Sistema]\n\nToda la XP obtenida hoy aumenta un 50%.');
+  } else {
+    ev.gold = gainGold(200 + Math.floor(Math.random() * 300)); ev.done = true;
+    notify('Evento', `Encontraste un cofre abandonado.\n\n<span class="gold">Oro +${ev.gold}</span>`);
+  }
+  S.event = ev;
+  save();
+}
+
+function viewEvent() {
+  const ev = S.event;
+  if (!ev || ev.date !== today()) return '';
+  if (ev.type === 'emergency') {
+    const left = (ev.until - Date.now()) / 1000;
+    return `<div class="win" style="--line:var(--red);--glow:var(--red-glow)"><div class="win-title">Misión de Emergencia</div>
+      <p class="center" style="margin-top:0"><b>${ev.task}</b><br><span class="muted">Recompensa: XP +120 · Caja Aleatoria</span></p>
+      ${ev.done ? '<p class="center" style="color:var(--accent)">✔ Completada</p>'
+        : left <= 0 ? '<p class="center red">Tiempo agotado.</p>'
+        : `<div class="center big-level red" style="font-size:32px" id="emg">${fmt(left)}</div><button class="btn block danger" id="emgDone">Completada</button>`}</div>`;
+  }
+  const text = {
+    merchant: `🛒 Comerciante ambulante: ${ITEMS[ev.item] ? ITEMS[ev.item].name : ''} a mitad de precio en la Tienda${ev.done ? ' (ya compraste)' : ''}.`,
+    gate: '🗝️ Una puerta apareció: recibiste una Llave de Mazmorra.',
+    blessing: '✨ Bendición del Sistema: toda la XP de hoy +50%.',
+    chest: `💰 Encontraste un cofre abandonado: +${ev.gold} de oro.`,
+  }[ev.type];
+  return `<div class="win"><div class="win-title">Evento de Hoy</div><p class="center" style="margin:0">${text}</p></div>`;
+}
+
+function completeEmergency() {
+  const ev = S.event;
+  if (!ev || ev.done) return;
+  if (Date.now() > ev.until) { render(); return; }
+  ev.done = true;
+  S.emergencies = (S.emergencies || 0) + 1;
+  dayLog().emergency = ev.task;
+  const xp = gainXP(120, 'emergency');
+  addItem('box');
+  notify('Misión Completada', `[Misión de Emergencia]\n\nXP +${xp}\nCaja Aleatoria ×1`);
+  save(); render();
+}
+
+const TESTS = {
+  push: { name: 'Flexiones máximas seguidas', unit: 'reps', goal: 50, title: 'fist' },
+  squat: { name: 'Sentadillas en 1 minuto', unit: 'reps', timer: 60, goal: 50, title: 'legs' },
+  plank: { name: 'Plancha máxima', unit: 'time', goal: 180, title: 'wall', hint: 'm:ss o segundos' },
+  burpee: { name: 'Burpees en 3 minutos', unit: 'reps', timer: 180, goal: 60, title: 'engine' },
+  run: { name: '1 km lo más rápido posible', unit: 'time', lower: true, goal: 270, title: 'wind', hint: 'm:ss' },
+};
+
+function parseTest(id, raw) {
+  raw = String(raw).trim();
+  if (TESTS[id].unit !== 'time') return Math.round(num(raw));
+  if (raw.includes(':')) { const [m, sec] = raw.split(':'); return num(m) * 60 + num(sec); }
+  return id === 'run' ? Math.round(num(raw) * 60) : Math.round(num(raw));
+}
+const fmtTest = (id, v) => (TESTS[id].unit === 'time' ? fmtMin(v) : `${v} reps`);
+
+function recordTest(id) {
+  const T = TESTS[id];
+  const v = parseTest(id, $('#t_' + id).value);
+  if (!(v > 0) || v > 100000) return;
+  const list = (S.tests[id] = S.tests[id] || []);
+  const best = list.length ? (T.lower ? Math.min(...list.map((x) => x.v)) : Math.max(...list.map((x) => x.v))) : null;
+  const pr = best !== null && (T.lower ? v < best : v > best);
+  const weekly = !list.some((x) => Date.now() - new Date(x.date + 'T12:00') < 6.5 * 864e5);
+  list.push({ date: today(), v });
+  let base = (weekly ? 80 : 0) + (pr ? 50 : 0);
+  if (hasSkill('Intención Asesina')) base *= 2;
+  const xp = base ? gainXP(base, 'test') : 0;
+  if (pr) S.prs = (S.prs || 0) + 1;
+  dayLog().tests = [...(dayLog().tests || []), `${T.name}: ${fmtTest(id, v)}`];
+  notify('Prueba de Fuerza', `[${T.name}]\n\nResultado: <b>${fmtTest(id, v)}</b>${pr ? '\n\n🏆 ¡Nuevo récord personal!' : best === null ? '\n\nPrimera medición registrada.' : ''}` +
+    `${xp ? `\n\nXP +${xp}` : '\n\nYa hiciste esta prueba esta semana: se registra, pero solo da XP si batís tu récord.'}`);
+  if (T.lower ? v <= T.goal : v >= T.goal) unlockTitle(T.title);
+  save(); render();
+}
+
+function viewTests() {
+  return `<div class="win"><div class="win-title">Pruebas de Fuerza</div>
+    <p class="muted" style="margin-top:0;font-size:14px">Medí tu progreso real. Cada prueba da XP una vez por semana, batir tu récord da bonus y superar ciertas marcas desbloquea títulos.</p>
+    ${Object.entries(TESTS).map(([id, T]) => {
+      const list = S.tests[id] || [];
+      const best = list.length ? (T.lower ? Math.min(...list.map((x) => x.v)) : Math.max(...list.map((x) => x.v))) : null;
+      return `<div style="padding:8px 0;border-bottom:1px dashed rgba(63,182,255,.25)">
+        <div class="row"><b>${T.name}</b>${T.timer ? `<button class="btn small" data-rest="${T.timer}" data-label="${T.name}">⏱ ${fmtMin(T.timer)}</button>` : ''}</div>
+        <div class="muted" style="font-size:14px">Récord: ${best !== null ? fmtTest(id, best) : '—'} · Meta del título: ${T.lower ? 'menos de ' : ''}${fmtTest(id, T.goal)}</div>
+        <div class="row" style="margin-top:4px"><input id="t_${id}" type="text" inputmode="decimal" placeholder="${T.hint || 'Resultado'}"><button class="btn small" data-test="${id}">Registrar</button></div>
+      </div>`;
+    }).join('')}
+    <p class="center timer rest-view" style="min-height:1.2em"></p>
+  </div>`;
+}
+
+const ACHIEVEMENTS = [
+  ['daily', 'Misiones diarias completadas', () => S.totalDaily, [1, 10, 50, 100, 365]],
+  ['streak', 'Mejor racha de días', () => S.bestStreak, [3, 7, 30, 100, 365]],
+  ['routines', 'Rutinas completadas', () => S.routineLog.length, [1, 10, 50, 100, 300]],
+  ['dungeons', 'Mazmorras despejadas', () => S.dungeons, [1, 10, 25, 50, 100]],
+  ['level', 'Nivel alcanzado', () => S.level, [10, 25, 50, 75, 100]],
+  ['tests', 'Pruebas de fuerza realizadas', () => Object.values(S.tests || {}).reduce((t, l) => t + l.length, 0), [1, 10, 25, 50]],
+  ['prs', 'Récords personales batidos', () => S.prs || 0, [1, 5, 15, 30]],
+  ['emergency', 'Misiones de emergencia superadas', () => S.emergencies || 0, [1, 5, 10, 25]],
+  ['side', 'Misiones secundarias completadas', () => S.sideDone || 0, [10, 50, 150, 500]],
+  ['weight', 'Registros de peso', () => S.weights.length, [5, 20, 50, 100]],
+];
+const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+const achReward = (i) => `${100 * (i + 1)} de oro${i >= 2 ? ' · Caja Aleatoria' : ''}${i >= 3 ? ' · +1 punto de habilidad' : ''}`;
+
+function checkAchievements() {
+  if (!S.awakened || !S.profile) return;
+  S.ach = S.ach || {};
+  for (const [id, name, fn, tiers] of ACHIEVEMENTS) {
+    let got = S.ach[id] || 0;
+    const v = fn();
+    while (got < tiers.length && v >= tiers[got]) {
+      const reward = achReward(got);
+      gainGold(100 * (got + 1));
+      if (got >= 2) addItem('box');
+      if (got >= 3) S.ap += 1;
+      got++;
+      notify('Logro', `[Logro desbloqueado]\n\n<b>${name} ${ROMAN[got - 1]}</b>\n(${tiers[got - 1]})\n\nRecompensa: ${reward}`);
+    }
+    S.ach[id] = got;
+  }
+  if (S.dungeons >= 25) unlockTitle('conqueror');
+  if (S.routineLog.length >= 50) unlockTitle('disciplined');
+  if (S.bestStreak >= 100) unlockTitle('legend');
+  if ((S.emergencies || 0) >= 10) unlockTitle('responder');
+}
+
+function viewAchievements() {
+  return `<div class="win"><div class="win-title">Logros</div>
+    ${ACHIEVEMENTS.map(([id, name, fn, tiers]) => {
+      const got = (S.ach || {})[id] || 0, v = fn();
+      const done = got >= tiers.length;
+      const next = tiers[Math.min(got, tiers.length - 1)];
+      return `<div style="padding:6px 0">
+        <div class="row"><span>${name} ${got ? `<span class="tag">${ROMAN[got - 1]}</span>` : ''}</span><b>${done ? '✔ Completo' : `${v} / ${next}`}</b></div>
+        ${done ? '' : bar('', v, next)}
+        ${done ? '' : `<div class="muted" style="font-size:13px">Siguiente: ${achReward(got)}</div>`}
+      </div>`;
+    }).join('')}
+  </div>`;
 }
 
 /* ================= RENDER ================= */
@@ -891,6 +1153,11 @@ const timerSec = () => {
 function tickTimers() {
   const sw = $('#sw');
   if (sw) sw.textContent = fmt(timerSec());
+  const emg = $('#emg');
+  if (emg && S.event) {
+    const left = (S.event.until - Date.now()) / 1000;
+    if (left <= 0) render(); else emg.textContent = fmt(left);
+  }
   const pen = $('#pen');
   if (pen) pen.textContent = fmt(penaltyLeft());
   if (S.penalty && S.penalty.until && penaltyLeft() <= 0 && !S.penalty.notified) {
@@ -907,7 +1174,8 @@ function tickTimers() {
   }
   if (!rest) return;
   const left = (rest.end - Date.now()) / 1000;
-  const el = $('#rest');
+  const views = document.querySelectorAll('#rest, .rest-view');
+  const el = views.length ? { set textContent(t) { views.forEach((v) => { v.textContent = t; }); } } : null;
   if (left <= 0) {
     rest = null;
     ding(false); setTimeout(() => ding(false), 350);
@@ -969,7 +1237,7 @@ function viewEval() {
     ${q.hint ? `<p class="muted" style="font-size:14px;margin-top:-6px">${q.hint}</p>` : ''}
     ${q.opts
       ? q.opts.map(([v, l]) => `<button class="btn block" data-ans="${v}" style="${val === v ? 'background:rgba(63,182,255,.35)' : ''}">${l}</button>`).join('')
-      : `<div class="row"><input id="qnum" type="number" inputmode="decimal" min="${q.num[0]}" max="${q.num[1]}" step="${q.step || 1}" value="${val ?? ''}" placeholder="${q.unit}">
+      : `<div class="row"><input id="qnum" type="text" inputmode="decimal" value="${val ?? ''}" placeholder="${q.unit}">
          <span class="muted">${q.unit}</span></div>
          <p class="red" id="qerr" style="font-size:14px;min-height:1em"></p>
          <button class="btn block" id="qnext">Siguiente</button>`}
@@ -1024,7 +1292,7 @@ function finishEval() {
 }
 
 function logWeight() {
-  const kg = Number($('#wkg').value);
+  const kg = num($('#wkg').value);
   if (!(kg >= 30 && kg <= 300)) return;
   const last = S.weights[S.weights.length - 1];
   dayLog().weight = kg;
@@ -1118,7 +1386,7 @@ function viewProfile() {
     <div class="row"><span>Calorías</span><b class="gold">${p.kcal} kcal</b></div>
     <div class="row"><span>Proteína · Agua</span><b>${p.protein} g · ${p.water} L</b></div>
     <hr>
-    <div class="row"><input id="wkg" type="number" inputmode="decimal" step="0.1" placeholder="Peso de hoy (kg)"><button class="btn small" id="wlog">Registrar</button></div>
+    <div class="row"><input id="wkg" type="text" inputmode="decimal" placeholder="Peso de hoy (kg)"><button class="btn small" id="wlog">Registrar</button></div>
     ${recent.length > 1 ? `<p class="muted" style="font-size:14px">${recent.map((w) => `${w.date.slice(5)}: ${w.kg} kg`).join(' · ')}</p>` : ''}
   </div>`;
 }
@@ -1155,11 +1423,15 @@ function viewStatus() {
   ${viewCalendar()}
   ${viewProfile()}
   <div class="win"><div class="win-title">Habilidades</div>
-    ${SKILLS.map((s) => {
-      const has = s.job ? S.job !== 'Ninguno' : S.level >= s.lv;
+    <p class="muted center" style="margin-top:0;font-size:14px">Ranuras equipadas: <b>${(S.equipped || []).length} / ${maxSlots()}</b>
+      ${S.level < 25 ? '<br>Nivel 25: +1 ranura' : ''}${S.job === 'Ninguno' ? '<br>Cambio de clase: +1 ranura' : ''}</p>
+    ${SKILLS.map((s, i) => {
+      const has = skillUnlocked(s);
+      const eq = s.job || (S.equipped || []).includes(s.name);
       return `<div class="item" style="${has ? '' : 'opacity:.35'}"><div class="info">
-        <b>${has ? s.name : '???'}</b><span class="tag">${s.type}</span>
-        <div class="desc">${has ? s.desc : (s.job ? 'Requiere cambio de clase.' : `Se desbloquea en nivel ${s.lv}.`)}</div></div></div>`;
+        <b>${has ? s.name : '???'}</b><span class="tag">${s.type}</span>${has && eq ? '<span class="tag">Equipada</span>' : ''}
+        <div class="desc">${has ? s.desc : (s.job ? 'Requiere cambio de clase.' : `Se desbloquea en nivel ${s.lv}.`)}</div></div>
+        ${has && !s.job ? `<button class="btn small" data-skill="${i}" ${!eq && S.equipped.length >= maxSlots() ? 'disabled' : ''}>${eq ? 'Quitar' : 'Equipar'}</button>` : ''}</div>`;
     }).join('')}
   </div>`;
 }
@@ -1183,6 +1455,7 @@ function viewQuests() {
       ${hasSkill('Sigilo') ? `<button class="btn block" id="stealth" ${S.mp < 100 || (S.stealthUsed && Date.now() - S.stealthUsed < 7 * 864e5) ? 'disabled' : ''}>Usar [Sigilo] (100 MP, 1/semana)</button>` : ''}
     </div>`;
   }
+  html += viewEvent();
   if (S.theme === 'varka') {
     html += `<div class="win"><div class="win-title">Carta del Gran Maestro</div>
       <p style="font-style:italic;margin-top:0">"${letterOfDay()}"</p>
@@ -1268,12 +1541,13 @@ function viewInventory() {
       <button class="btn small" data-use="${id}">${id === 'box' ? 'Abrir' : 'Usar'}</button></div>`).join('')
       : '<p class="muted center">Vacío.</p>'}
   </div>
+  ${viewAchievements()}
   <div class="win"><div class="win-title">Títulos</div>
     ${Object.entries(TITLES).map(([id, t]) => {
       const has = S.titles.includes(id);
-      return `<div class="item" style="${has ? '' : 'opacity:.35'}"><div class="info">
-        <b>${has ? t.name : '???'}</b>${S.title === id ? '<span class="tag">Equipado</span>' : ''}
-        <div class="desc">${has ? `${t.desc}<br>Efecto: ${t.bonus}` : 'Misión secreta.'}</div></div>
+      return `<div class="item" style="${has ? '' : 'opacity:.6'}"><div class="info">
+        <b>${has || !t.secret ? t.name : '???'}</b>${has ? '' : ' 🔒'}${S.title === id ? '<span class="tag">Equipado</span>' : ''}
+        <div class="desc">${has ? `${t.desc}<br>Efecto: ${t.bonus}` : t.secret ? 'Misión secreta.' : `Requisito: ${t.desc}<br>Efecto: ${t.bonus}`}</div></div>
         ${has ? `<button class="btn small" data-title="${id}">${S.title === id ? 'Quitar' : 'Equipar'}</button>` : ''}</div>`;
     }).join('')}
   </div>`;
@@ -1284,7 +1558,7 @@ function viewShop() {
     <div class="row" style="margin-bottom:8px"><span class="label">Oro disponible</span><b class="gold">${S.gold.toLocaleString('es')}</b></div>
     ${Object.entries(ITEMS).map(([id, it]) => `<div class="item"><div class="ico">${it.ico}</div>
       <div class="info"><b>${it.name}</b><div class="desc">${it.desc}</div></div>
-      <button class="btn small" data-buy="${id}" ${S.gold < it.price ? 'disabled' : ''}>${it.price} G</button></div>`).join('')}
+      <button class="btn small" data-buy="${id}" ${S.gold < priceOf(id) ? 'disabled' : ''}>${priceOf(id) < it.price ? `<s style="opacity:.6">${it.price}</s> ` : ''}${priceOf(id)} G</button></div>`).join('')}
   </div>`;
 }
 
@@ -1366,8 +1640,10 @@ document.addEventListener('click', (ev) => {
   if (d.title) { S.title = S.title === d.title ? null : d.title; save(); render(); return; }
   if (d.buy) {
     const it = ITEMS[d.buy];
-    if (S.gold < it.price) return;
-    S.gold -= it.price; addItem(d.buy); save(); render();
+    const pr = priceOf(d.buy);
+    if (S.gold < pr) return;
+    if (S.event && S.event.type === 'merchant' && S.event.item === d.buy && S.event.date === today()) S.event.done = true;
+    S.gold -= pr; addItem(d.buy); save(); render();
     notify('Tienda', `Has comprado:\n${it.ico} <b>[${it.name}]</b>`); return;
   }
   if (d.ans) { evalDraft.answers[QUESTIONS[evalDraft.step].id] = d.ans; evalDraft.step++; render(); return; }
@@ -1376,6 +1652,13 @@ document.addEventListener('click', (ev) => {
   if (d.day) { calSel = d.day; render(); return; }
   if (d.cal) { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + Number(d.cal), 1); render(); return; }
   if (d.dstep) return dungeonStep(Number(d.dstep));
+  if (d.test) return recordTest(d.test);
+  if (d.skill) {
+    const sk = SKILLS[Number(d.skill)];
+    if (S.equipped.includes(sk.name)) S.equipped = S.equipped.filter((n) => n !== sk.name);
+    else if (S.equipped.length < maxSlots()) S.equipped.push(sk.name);
+    save(); render(); return;
+  }
   if (d.dstart) {
     const st = S.daily.dungeon.steps[d.dstart];
     S.daily.dungeon.run = { i: Number(d.dstart), end: Date.now() + st.n * 1000 };
@@ -1384,7 +1667,7 @@ document.addEventListener('click', (ev) => {
   if (d.del) { S.side = S.side.filter((q) => q.id != d.del); save(); render(); return; }
   switch (b.id) {
     case 'qnext': {
-      const q = QUESTIONS[evalDraft.step], v = Number($('#qnum').value);
+      const q = QUESTIONS[evalDraft.step], v = num($('#qnum').value);
       if (!(v >= q.num[0] && v <= q.num[1])) { $('#qerr').textContent = `Ingresá un valor entre ${q.num[0]} y ${q.num[1]}.`; return; }
       evalDraft.answers[q.id] = v; evalDraft.step++; render(); return;
     }
@@ -1401,6 +1684,7 @@ document.addEventListener('click', (ev) => {
     case 'swReset': S.daily.timer = { acc: 0, start: null }; save(); render(); return;
     case 'claim': return claimDaily();
     case 'survive': return clearPenalty();
+    case 'emgDone': return completeEmergency();
     case 'blockOn': return activateBlock();
     case 'ptaskDone':
       S.penalty.taskDone = true; save();
@@ -1494,9 +1778,11 @@ function maybeRemind() {
 /* ================= BOOT ================= */
 
 rollover();
+ensureEquipped();
+rollEvent();
 render();
 setInterval(() => {
-  if (rollover()) render();
+  if (rollover()) { rollEvent(); render(); }
   maybeRemind();
   const t = $('#timer');
   if (t) t.textContent = timeLeft();
