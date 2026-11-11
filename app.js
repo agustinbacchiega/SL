@@ -329,6 +329,7 @@ function completeRoutine(id) {
   if (routineDone(id)) return;
   S.routineLog.push({ date: today(), id });
   dayLog().routines = pushUnique(dayLog().routines || [], id);
+  gainProto(10);
   hitBoss('routine');
   const R = ALL_ROUTINES()[id];
   const xp = gainXP((isRestRoutine(id) ? 30 : 60) + (hasSkill('Respiración Profunda') ? 20 : 0), 'routine');
@@ -567,6 +568,7 @@ function defaultState() {
     theme: 'sl', themeUnlocked: false,
     equipped: null, event: null, eventDay: null, tests: {}, prs: 0, emergencies: 0, sideDone: 0, ach: {},
     journal: {},
+    gear: { primos: 1600, pity5: 0, pity4: 0, inv: {}, eq: {} },
   };
 }
 
@@ -586,6 +588,7 @@ function load() {
       st.block = Object.assign(defaultState().block, st.block);
       st.tests = st.tests || {};
       st.journal = st.journal || {};
+      st.gear = Object.assign(defaultState().gear, st.gear);
       if (!st.log) {
         // Build the calendar from what older versions already stored.
         st.log = {};
@@ -644,7 +647,7 @@ const titleIs = (id) => S.title === id;
 
 function decayFatigue() {
   const hours = (Date.now() - S.fatigueAt) / 3.6e6;
-  S.fatigue = Math.max(0, S.fatigue - hours * (hasSkill('Regeneración') ? 16 : 8));
+  S.fatigue = Math.max(0, S.fatigue - hours * (hasSkill('Regeneración') ? 16 : 8) * (1 + gearBonus().fat));
   S.fatigueAt = Date.now();
 }
 
@@ -658,6 +661,7 @@ const queue = [];
 let showing = false;
 
 function notify(title, msg, opts = {}) {
+  if (pendingProto && msg) { msg += `\n💎 Protogemas +${pendingProto}`; pendingProto = 0; }
   queue.push({ title, msg, ...opts });
   if (!showing) nextNotice();
 }
@@ -718,6 +722,7 @@ function gainXP(base, source) {
   if (source === 'dungeon' && titleIs('red')) mult += 0.2;
   if (titleIs('double')) mult += 0.15;
   if (titleIs('legend')) mult += 0.2;
+  mult += gearBonus().xp;
   if (source === 'routine' && titleIs('disciplined')) mult += 0.25;
   if (source === 'emergency' && titleIs('responder')) mult += 0.5;
   if (source === 'test' && ['fist', 'legs', 'wall', 'engine', 'wind'].includes(S.title)) mult += 0.25;
@@ -730,6 +735,7 @@ function gainXP(base, source) {
     S.xp -= xpNeeded();
     S.level++; ups++;
     S.ap += 5;
+    gainProto(50);
   }
   if (ups) {
     S.hp = maxHP(); S.mp = maxMP(); S.fatigue = 0;
@@ -749,7 +755,7 @@ function gainXP(base, source) {
 }
 
 function gainGold(n) {
-  const g = Math.round(n * (1 + (titleIs('demon') ? 0.5 : 0) + (titleIs('conqueror') ? 0.25 : 0) + (hasSkill('Autoridad del Gobernante') ? 0.2 : 0)));
+  const g = Math.round(n * (1 + (titleIs('demon') ? 0.5 : 0) + (titleIs('conqueror') ? 0.25 : 0) + (hasSkill('Autoridad del Gobernante') ? 0.2 : 0) + gearBonus().gold));
   S.gold += g;
   return g;
 }
@@ -775,6 +781,7 @@ function logExercise(k, amount) {
   if (doubled && !S.daily.secret) {
     S.daily.secret = true;
     dayLog().secret = true;
+    gainProto(20);
     hitBoss('secret');
     const xp = gainXP(150 + S.level * 5, 'daily');
     const g = gainGold(200);
@@ -790,6 +797,7 @@ function claimDaily() {
   if (S.daily.claimed || !dailyComplete()) return;
   S.daily.claimed = true;
   dayLog().daily = true;
+  gainProto(60);
   hitBoss('daily');
   S.totalDaily++;
   S.streak++;
@@ -922,6 +930,7 @@ function clearDungeon() {
   d.done = true;
   S.dungeons++;
   dayLog().dungeon = d.boss || d.name;
+  gainProto(40);
   hitBoss('dungeon');
   const xp = gainXP(d.xp, 'dungeon');
   const g = gainGold(150);
@@ -1026,6 +1035,7 @@ function completeEmergency() {
   if (Date.now() > ev.until) { render(); return; }
   ev.done = true;
   S.emergencies = (S.emergencies || 0) + 1;
+  gainProto(20);
   hitBoss('emergency');
   dayLog().emergency = ev.task;
   const xp = gainXP(120, 'emergency');
@@ -1064,6 +1074,7 @@ function recordTest(id) {
   const xp = base ? gainXP(base, 'test') : 0;
   if (pr) S.prs = (S.prs || 0) + 1;
   if (base) hitBoss('test');
+  if (pr) gainProto(10);
   dayLog().tests = [...(dayLog().tests || []), `${T.name}: ${fmtTest(id, v)}`];
   notify('Prueba de Fuerza', `[${T.name}]\n\nResultado: <b>${fmtTest(id, v)}</b>${pr ? '\n\n🏆 ¡Nuevo récord personal!' : best === null ? '\n\nPrimera medición registrada.' : ''}` +
     `${xp ? `\n\nXP +${xp}` : '\n\nYa hiciste esta prueba esta semana: se registra, pero solo da XP si batís tu récord.'}`);
@@ -1114,6 +1125,7 @@ function checkAchievements() {
       gainGold(100 * (got + 1));
       if (got >= 2) addItem('box');
       if (got >= 3) S.ap += 1;
+      gainProto(20 * (got + 1));
       got++;
       notify('Logro', `[Logro desbloqueado]\n\n<b>${name} ${ROMAN[got - 1]}</b>\n(${tiers[got - 1]})\n\nRecompensa: ${reward}`);
     }
@@ -1183,6 +1195,7 @@ function hitBoss(kind) {
   const xp = gainXP(300);
   const g = gainGold(300);
   addItem('box'); addItem('key');
+  gainProto(160);
   dayLog().boss = bossName();
   notify('Jefe Semanal', `¡Has derrotado a <b>${bossName()}</b>!\n\nRecompensas:\n• XP +${xp}\n• Oro +${g}\n• Caja Aleatoria ×1\n• Llave de Mazmorra ×1\n\nUn nuevo jefe aparecerá el lunes.`);
 }
@@ -1385,6 +1398,142 @@ async function shareCard() {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+/* ================= FAVONIUS GEAR (Varka theme only) ================= */
+
+const GEAR_SLOTS = {
+  weapon: { name: 'Arma', ico: '🗡️', stat: 'xp' },
+  flower: { name: 'Flor de la Vida', ico: '🌸', stat: 'fat' },
+  plume: { name: 'Pluma de la Muerte', ico: '🪶', stat: 'gold' },
+  sands: { name: 'Arenas del Eón', ico: '⏳', stat: 'xp' },
+  goblet: { name: 'Cáliz de Eonotema', ico: '🏆', stat: 'gold' },
+  circlet: { name: 'Tiara de Logos', ico: '👑', stat: 'xp' },
+};
+const STAT_LABEL = { xp: 'XP', gold: 'Mora', fat: 'Recuperación de fatiga' };
+const WEAPONS = [
+  ['lapida', 'Lápida del Lobo', 5], ['orgullo', 'Orgullo Celestial', 5], ['pinos', 'Canción de los Pinos Rotos', 5],
+  ['favonius', 'Espadón de Favonius', 4], ['cortalluvias', 'Cortalluvias', 4], ['sacrificio', 'Espadón del Sacrificio', 4],
+  ['hierro', 'Espadón de Hierro Blanco', 3], ['sangre', 'Espadón Ensangrentado', 3], ['debate', 'Garrote de Debate', 3],
+];
+const ART_SETS = [
+  ['glad', 'Gladiador', 5], ['esmeralda', 'Sombra Esmeralda', 5], ['caballero', 'Caballero Ensangrentado', 5],
+  ['instructor', 'Instructor', 4], ['aventurero', 'Aventurero', 3], ['afortunado', 'Perro Afortunado', 3],
+];
+const GEAR = {};
+WEAPONS.forEach(([id, name, r]) => { GEAR['w_' + id] = { slot: 'weapon', name, r }; });
+ART_SETS.forEach(([set, setName, r]) => Object.entries(GEAR_SLOTS).forEach(([slot, sl]) => {
+  if (slot !== 'weapon') GEAR[`a_${set}_${slot}`] = { slot, set, name: `${sl.name} del ${setName}`, r };
+}));
+const SET_NAME = Object.fromEntries(ART_SETS.map(([id, n]) => [id, n]));
+
+// Deliberately tiny: a full 5★ build adds up to roughly +5% XP and a few % elsewhere.
+const gearValue = (g, refine) => ({ 3: 0.25, 4: 0.5, 5: 1 }[g.r] * (g.slot === 'weapon' ? 2 : 1) * (1 + 0.25 * (refine - 1))) / 100;
+const owned = (id) => S.gear.inv[id] || 0;
+
+function gearBonus() {
+  const b = { xp: 0, gold: 0, fat: 0 };
+  if (S.theme !== 'varka' || !S.gear) return b;
+  const sets = {};
+  for (const [slot, id] of Object.entries(S.gear.eq)) {
+    if (!id || !owned(id)) continue;
+    const g = GEAR[id];
+    b[GEAR_SLOTS[slot].stat] += gearValue(g, owned(id));
+    if (g.set) sets[g.set] = (sets[g.set] || 0) + 1;
+  }
+  for (const n of Object.values(sets)) { if (n >= 2) b.xp += 0.005; if (n >= 4) b.xp += 0.01; }
+  return b;
+}
+
+const activeSets = () => {
+  const sets = {};
+  Object.values(S.gear.eq).forEach((id) => { if (id && GEAR[id].set) sets[GEAR[id].set] = (sets[GEAR[id].set] || 0) + 1; });
+  return Object.entries(sets).filter(([, n]) => n >= 2);
+};
+
+function combatPower() {
+  let cp = S.level * 20 + Object.values(S.stats).reduce((a, v) => a + v, 0) * 10;
+  for (const id of Object.values(S.gear.eq)) if (id && owned(id)) cp += { 3: 100, 4: 250, 5: 600 }[GEAR[id].r] * (1 + 0.2 * (owned(id) - 1));
+  return Math.round(cp);
+}
+
+let pendingProto = 0;
+function gainProto(n) {
+  if (S.theme !== 'varka') return;
+  S.gear.primos += n;
+  pendingProto += n;
+}
+
+function wish(times) {
+  const cost = 160 * times;
+  if (S.gear.primos < cost) return;
+  S.gear.primos -= cost;
+  const results = [];
+  for (let i = 0; i < times; i++) {
+    S.gear.pity5++; S.gear.pity4++;
+    let r = 3;
+    const roll = Math.random();
+    if (S.gear.pity5 >= 60 || roll < 0.02) r = 5;
+    else if (S.gear.pity4 >= 10 || roll < 0.15) r = 4;
+    if (r === 5) S.gear.pity5 = 0;
+    if (r >= 4) S.gear.pity4 = 0;
+    const pool = Object.keys(GEAR).filter((id) => GEAR[id].r === r);
+    const id = pool[Math.floor(Math.random() * pool.length)];
+    let note = '';
+    if (owned(id) >= 5) { const back = { 3: 5, 4: 20, 5: 80 }[r]; S.gear.primos += back; note = ` (R5 máx · +${back} 💎)`; }
+    else { S.gear.inv[id] = owned(id) + 1; note = owned(id) > 1 ? ` (refinado R${owned(id)})` : ' (nuevo)'; }
+    results.push({ id, r, note });
+  }
+  results.sort((a, b) => b.r - a.r);
+  const best = results[0].r;
+  notify(best === 5 ? '★★★★★ Deseo' : 'Deseo', '', {
+    html: `<div style="text-align:left;max-height:50vh;overflow:auto">${results.map((x) => `<div class="gear-r${x.r}" style="padding:4px 0">
+      ${'★'.repeat(x.r)} ${GEAR_SLOTS[GEAR[x.id].slot].ico} <b>${GEAR[x.id].name}</b><span class="muted" style="font-size:13px">${x.note}</span></div>`).join('')}</div>`,
+  });
+  save(); render();
+}
+
+let gearSlot = 'weapon';
+
+function viewGear() {
+  if (S.theme !== 'varka') return '';
+  const b = gearBonus();
+  const pct = (v) => `+${(v * 100).toFixed(2).replace(/\.?0+$/, '')}%`;
+  const slotCard = (slot) => {
+    const sl = GEAR_SLOTS[slot], id = S.gear.eq[slot], g = id && owned(id) ? GEAR[id] : null;
+    return `<button class="gear-slot ${g ? 'gear-r' + g.r : ''} ${gearSlot === slot ? 'sel' : ''}" data-gslot="${slot}">
+      <span class="gear-ico">${sl.ico}</span>
+      <small class="muted">${sl.name}</small>
+      <b>${g ? g.name : '— vacío —'}</b>
+      ${g ? `<small>${'★'.repeat(g.r)} · R${owned(id)} · ${STAT_LABEL[sl.stat]} ${pct(gearValue(g, owned(id)))}</small>` : ''}
+    </button>`;
+  };
+  const list = Object.keys(GEAR).filter((id) => GEAR[id].slot === gearSlot && owned(id)).sort((x, y) => GEAR[y].r - GEAR[x].r);
+  return `<div class="win"><div class="win-title">Equipamiento</div>
+    <div class="center"><div class="label">Poder de combate</div><div class="big-level gold" style="font-size:44px">${combatPower().toLocaleString('es')}</div></div>
+    <div class="gear-grid">${Object.keys(GEAR_SLOTS).map(slotCard).join('')}</div>
+    <p class="center" style="font-size:15px;margin:10px 0 0">XP ${pct(b.xp)} · Mora ${pct(b.gold)} · Recuperación ${pct(b.fat)}</p>
+    ${activeSets().length ? `<p class="center muted" style="font-size:13px;margin:4px 0 0">${activeSets().map(([set, n]) => `${SET_NAME[set]} (${n}): XP +${n >= 4 ? '1,5' : '0,5'}%`).join(' · ')}</p>` : ''}
+  </div>
+  <div class="win"><div class="win-title">${GEAR_SLOTS[gearSlot].ico} ${GEAR_SLOTS[gearSlot].name}</div>
+    ${list.length ? list.map((id) => {
+      const g = GEAR[id], eq = S.gear.eq[gearSlot] === id;
+      return `<div class="item"><div class="info gear-r${g.r}"><b>${g.name}</b> <small>${'★'.repeat(g.r)} R${owned(id)}</small>
+        <div class="desc">${STAT_LABEL[GEAR_SLOTS[gearSlot].stat]} ${pct(gearValue(g, owned(id)))}${g.set ? ` · Set ${SET_NAME[g.set]}` : ''}</div></div>
+        <button class="btn small" data-gequip="${id}">${eq ? 'Quitar' : 'Equipar'}</button></div>`;
+    }).join('') : '<p class="muted center">No tenés piezas para esta ranura. Conseguilas con Deseos.</p>'}
+  </div>
+  <div class="win"><div class="win-title">Deseo</div>
+    <p class="center" style="margin-top:0"><b>Viento del Gran Maestro</b><br><span class="muted" style="font-size:14px">Armas y artefactos de Mondstadt</span></p>
+    <div class="center big-level" style="font-size:36px">💎 ${S.gear.primos.toLocaleString('es')}</div>
+    <div class="grid2" style="margin-top:8px">
+      <button class="btn" data-wish="1" ${S.gear.primos < 160 ? 'disabled' : ''}>Deseo ×1<br><small>160 💎</small></button>
+      <button class="btn" data-wish="10" ${S.gear.primos < 1600 ? 'disabled' : ''}>Deseo ×10<br><small>1.600 💎</small></button>
+    </div>
+    <p class="muted center" style="font-size:13px">5★ garantizado en ${60 - S.gear.pity5} · 4★ o más en ${10 - S.gear.pity4}<br>Probabilidad: 5★ 2% · 4★ 13% · 3★ 85% · Repetidos refinan hasta R5</p>
+    <details><summary class="muted" style="font-size:14px">¿Cómo consigo protogemas?</summary>
+      <p style="font-size:14px">Entrenamiento de Favonius 60 · Jefe semanal 160 · Subir de nivel 50 por nivel · Dominio 40 · Logros 20–100 · Hazaña oculta 20 · Encargo urgente 20 · Rutina 10 · Récord personal 10 · Bitácora 5.<br>Solo se ganan con el tema de Caballeros de Favonius activo.</p></details>
+  </div>`;
+}
+
 /* ================= RENDER ================= */
 
 const $ = (s) => document.querySelector(s);
@@ -1449,7 +1598,10 @@ function tickTimers() {
 function render() {
   document.body.classList.toggle('penalty', !!S.penalty);
   document.body.classList.toggle('varka', S.theme === 'varka');
+  if (tab === 'gear' && S.theme !== 'varka') tab = 'status';
+  $('#tabs').classList.toggle('seven', S.theme === 'varka');
   document.querySelectorAll('#tabs button').forEach((b) => {
+    b.hidden = b.dataset.tab === 'gear' && S.theme !== 'varka';
     b.dataset.label = b.dataset.label || b.textContent;
     b.textContent = themed(b.dataset.label);
   });
@@ -1460,7 +1612,7 @@ function render() {
   $('#tabs').hidden = false;
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   decayFatigue();
-  app.innerHTML = themed({ status: viewStatus, quests: viewQuests, routines: viewRoutines, inventory: viewInventory, shop: viewShop, more: viewMore }[tab]());
+  app.innerHTML = themed({ status: viewStatus, quests: viewQuests, routines: viewRoutines, inventory: viewInventory, shop: viewShop, more: viewMore, gear: viewGear }[tab]());
 }
 
 function viewAwaken() {
@@ -1637,6 +1789,7 @@ function saveJournal(el, final) {
   if (final && d === today() && j.text.trim().length >= 10 && !j.xp) {
     j.xp = true;
     const xp = gainXP(15);
+    gainProto(5);
     hitBoss('journal');
     notify('Diario', `Entrada del diario guardada.\n\nXP +${xp}`);
   }
@@ -1949,6 +2102,13 @@ document.addEventListener('click', (ev) => {
   if (d.rest) { rest = { end: Date.now() + d.rest * 1000, label: d.label }; tickTimers(); return; }
   if (d.routine) return completeRoutine(d.routine);
   if (d.guide) return startGuide(d.guide);
+  if (d.gslot) { gearSlot = d.gslot; render(); return; }
+  if (d.gequip) {
+    const sl = GEAR[d.gequip].slot;
+    S.gear.eq[sl] = S.gear.eq[sl] === d.gequip ? null : d.gequip;
+    save(); render(); return;
+  }
+  if (d.wish) return wish(Number(d.wish));
   if (d.day) { calSel = d.day; render(); return; }
   if (d.mood) {
     S.journal = S.journal || {};

@@ -154,3 +154,17 @@ textarea { font: inherit; color: var(--text); background: #0a1a30; border: 1px s
   padding: 8px 10px; width: 100%; margin-top: 8px; resize: vertical; }
 .btn.mood { padding: 2px 6px; margin-left: 2px; font-size: 16px; box-shadow: none; opacity: .5; }
 .btn.mood.on { opacity: 1; box-shadow: 0 0 8px var(--glow); }
+
+/* Favonius gear */
+#tabs.seven button { font-size: 10.5px; letter-spacing: 0; }
+.gear-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.gear-slot { background: rgba(255,255,255,.03); border: 1px solid rgba(143,181,173,.35); border-radius: 6px; padding: 10px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-height: 118px; }
+.gear-slot.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+.gear-ico { font-size: 26px; }
+.gear-slot b { font-size: 14px; line-height: 1.15; }
+.gear-slot small { font-size: 11px; }
+.gear-r3 { --rc: #6fa8ff; } .gear-r4 { --rc: #c48cff; } .gear-r5 { --rc: #ffc85a; }
+.gear-slot.gear-r3, .gear-slot.gear-r4, .gear-slot.gear-r5 { border-color: var(--rc); box-shadow: 0 0 10px color-mix(in srgb, var(--rc) 45%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rc) 16%, transparent), transparent); }
+.gear-r3 b, .gear-r4 b, .gear-r5 b, .gear-r3 small, .gear-r4 small, .gear-r5 small { color: var(--rc); }
