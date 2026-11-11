@@ -615,6 +615,7 @@ function load() {
 function save() {
   checkRealStats();
   checkAchievements();
+  gmReadyNotice();
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
 }
 
@@ -1789,6 +1790,18 @@ function buildTrial() {
     const val = n.startsWith('Marcha') || n.startsWith('Caminata') ? v : u === 'sec' ? Math.round((v * fac) / 15) * 15 : Math.round((v * fac) / 5) * 5;
     return { name: n, v: val, unit: u, done: false };
   });
+}
+
+// Varka writes once when the requirements are met; resets if they slip again.
+function gmReadyNotice() {
+  if (S.theme !== 'varka' || !S.gm || S.gm.unlocked || S.gm.trial) return;
+  const ready = gmReady();
+  if (ready && !S.gm.readyNotified) {
+    S.gm.readyNotified = true;
+    notify('Carta del Gran Maestro', '"Te estuve observando estas dos semanas. Estás listo."\n— Varka\n\nCumpliste los requisitos del <b>Régimen del Gran Maestro</b>.\nAceptá la prueba en la pestaña Rutinas.');
+  } else if (!ready && S.gm.readyNotified) {
+    S.gm.readyNotified = false;
+  }
 }
 
 function gmCheckTrial() {
