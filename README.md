@@ -50,6 +50,9 @@ Las repeticiones y series se ajustan a tu nivel, la cantidad de ejercicios a tu 
 - **Mazmorras raras**: Puertas Rojas (3 oleadas, más XP) y la Mazmorra Doble (muy rara), con jefes variados por rango.
 - **Eventos aleatorios**: misiones de emergencia con tiempo límite, comerciante con descuentos, puertas con llaves gratis, bendiciones de XP y cofres.
 - **Pruebas de fuerza**: flexiones máximas, sentadillas en 1 minuto, plancha, burpees en 3 minutos y 1 km. Registran récords y desbloquean títulos.
+- **Entrenamiento guiado**: cada rutina se puede hacer paso a paso, con series, temporizador automático para ejercicios por tiempo y descansos que avanzan solos.
+- **Jefe semanal**: cada semana aparece un jefe con HP que baja con todo lo que hacés (diaria, rutinas, mazmorras, pruebas, diario…). Si lo vencés antes del domingo hay recompensa grande.
+- **Tarjeta de cazador**: genera una imagen con tu nivel, rango, estadísticas y récords para compartir.
 - **Diario**: en el Calendario, cada día tiene una entrada de texto y un estado de ánimo. La de hoy da +15 XP y los días con entrada se marcan con ✎.
 - **Logros** con 4 o 5 niveles cada uno y recompensas, y **títulos con requisitos visibles** (salvo los secretos).
 

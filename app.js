@@ -329,6 +329,7 @@ function completeRoutine(id) {
   if (routineDone(id)) return;
   S.routineLog.push({ date: today(), id });
   dayLog().routines = pushUnique(dayLog().routines || [], id);
+  hitBoss('routine');
   const R = ALL_ROUTINES()[id];
   const xp = gainXP((isRestRoutine(id) ? 30 : 60) + (hasSkill('Respiración Profunda') ? 20 : 0), 'routine');
   decayFatigue();
@@ -352,7 +353,8 @@ function routineCard(id, open) {
         ? `<button class="btn small" data-rest="${e.v}" data-label="${esc(e.name)}">⏱ ${fmtMin(e.v)}</button>`
         : `<span class="count">${e.v} reps</span>`}</div>`).join('')}
     ${r.rest ? `<div class="row" style="justify-content:center;margin-top:8px"><button class="btn small" data-rest="${r.rest}">Descanso ${r.rest}s</button></div>` : ''}
-    ${done ? '<p class="center" style="color:var(--accent)">✔ Completada hoy</p>' : `<button class="btn block" data-routine="${id}">Completar rutina</button>`}
+    <button class="btn block" data-guide="${id}">▶ Entrenamiento guiado</button>
+    ${done ? '<p class="center" style="color:var(--accent)">✔ Completada hoy</p>' : `<button class="btn block small" data-routine="${id}">Ya la hice: completar</button>`}
   </details>`;
 }
 
@@ -773,6 +775,7 @@ function logExercise(k, amount) {
   if (doubled && !S.daily.secret) {
     S.daily.secret = true;
     dayLog().secret = true;
+    hitBoss('secret');
     const xp = gainXP(150 + S.level * 5, 'daily');
     const g = gainGold(200);
     addItem('box');
@@ -787,6 +790,7 @@ function claimDaily() {
   if (S.daily.claimed || !dailyComplete()) return;
   S.daily.claimed = true;
   dayLog().daily = true;
+  hitBoss('daily');
   S.totalDaily++;
   S.streak++;
   S.bestStreak = Math.max(S.bestStreak, S.streak);
@@ -918,6 +922,7 @@ function clearDungeon() {
   d.done = true;
   S.dungeons++;
   dayLog().dungeon = d.boss || d.name;
+  hitBoss('dungeon');
   const xp = gainXP(d.xp, 'dungeon');
   const g = gainGold(150);
   let msg = `${d.boss ? `Has derrotado a <b>${d.boss}</b>.\n` : ''}Has despejado la mazmorra.\n\nXP +${xp}  ·  Oro +${g}`;
@@ -944,6 +949,7 @@ function completeSide(q) {
   if (q.done === today()) return;
   q.done = today();
   S.sideDone = (S.sideDone || 0) + 1;
+  hitBoss('side');
   dayLog().side = pushUnique(dayLog().side || [], q.name);
   const xp = gainXP(q.xp, 'side');
   let g = 0;
@@ -1020,6 +1026,7 @@ function completeEmergency() {
   if (Date.now() > ev.until) { render(); return; }
   ev.done = true;
   S.emergencies = (S.emergencies || 0) + 1;
+  hitBoss('emergency');
   dayLog().emergency = ev.task;
   const xp = gainXP(120, 'emergency');
   addItem('box');
@@ -1056,6 +1063,7 @@ function recordTest(id) {
   if (hasSkill('Intención Asesina')) base *= 2;
   const xp = base ? gainXP(base, 'test') : 0;
   if (pr) S.prs = (S.prs || 0) + 1;
+  if (base) hitBoss('test');
   dayLog().tests = [...(dayLog().tests || []), `${T.name}: ${fmtTest(id, v)}`];
   notify('Prueba de Fuerza', `[${T.name}]\n\nResultado: <b>${fmtTest(id, v)}</b>${pr ? '\n\n🏆 ¡Nuevo récord personal!' : best === null ? '\n\nPrimera medición registrada.' : ''}` +
     `${xp ? `\n\nXP +${xp}` : '\n\nYa hiciste esta prueba esta semana: se registra, pero solo da XP si batís tu récord.'}`);
@@ -1132,6 +1140,251 @@ function viewAchievements() {
   </div>`;
 }
 
+/* ================= WEEKLY BOSS ================= */
+
+const WEEKLY_BOSSES = ['Igris, el Caballero Sangriento', 'Tusk, el Alto Orco', 'Vulcan, Señor de los Demonios', 'Baruka, el Elfo de Hielo',
+  'Beru, el Rey Hormiga', 'Kargalgan, Chamán de los Alto Orcos', 'Metus, el Liche', 'Kamish, el Dragón'];
+const WEEKLY_BOSSES_VARKA = ['Stormterror Dvalin', 'Andrius, Señor de los Lobos', 'Tartaglia, el Undécimo Heraldo', 'Azhdaha',
+  'La Signora', 'Marioneta de la Shogun'];
+// Damage per activity; HP scales with planned training days so a normal week can win.
+const BOSS_DMG = { daily: 100, routine: 60, dungeon: 80, secret: 50, emergency: 50, test: 40, side: 20, journal: 10 };
+
+function weekStart(d = new Date()) {
+  const x = new Date(d);
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+  return today(x);
+}
+
+function ensureBoss() {
+  if (!S.awakened || !S.profile) return;
+  const wk = weekStart();
+  if (S.boss && S.boss.week === wk) return;
+  if (S.boss && !S.boss.defeated && S.boss.hp < S.boss.max)
+    notify('Jefe Semanal', `<b>${S.boss.name}</b> escapó con ${S.boss.hp} HP.\n\nUn nuevo jefe apareció esta semana.`);
+  const n = Math.round((new Date(wk) - new Date('2024-01-01')) / (7 * 864e5));
+  const max = 350 + 80 * TRAIN_DAYS[+S.profile.answers.activity].length;
+  S.boss = { week: wk, n, max, hp: max, defeated: false, hits: [] };
+}
+
+const bossName = () => {
+  const list = S.theme === 'varka' ? WEEKLY_BOSSES_VARKA : WEEKLY_BOSSES;
+  return list[Math.abs(S.boss.n) % list.length];
+};
+
+function hitBoss(kind) {
+  ensureBoss();
+  const b = S.boss;
+  if (!b || b.defeated) return;
+  const dmg = BOSS_DMG[kind];
+  b.hp = Math.max(0, b.hp - dmg);
+  b.hits = [{ kind, dmg, date: today() }, ...b.hits].slice(0, 6);
+  if (b.hp > 0) return;
+  b.defeated = true;
+  const xp = gainXP(300);
+  const g = gainGold(300);
+  addItem('box'); addItem('key');
+  dayLog().boss = bossName();
+  notify('Jefe Semanal', `¡Has derrotado a <b>${bossName()}</b>!\n\nRecompensas:\n• XP +${xp}\n• Oro +${g}\n• Caja Aleatoria ×1\n• Llave de Mazmorra ×1\n\nUn nuevo jefe aparecerá el lunes.`);
+}
+
+const HIT_LABEL = { daily: 'Misión diaria', routine: 'Rutina', dungeon: 'Mazmorra', secret: 'Misión secreta', emergency: 'Emergencia', test: 'Prueba de fuerza', side: 'Misión secundaria', journal: 'Diario' };
+
+function viewBoss() {
+  ensureBoss();
+  const b = S.boss;
+  if (!b) return '';
+  const end = new Date(b.week + 'T00:00'); end.setDate(end.getDate() + 7);
+  const days = Math.ceil((end - Date.now()) / 864e5);
+  return `<div class="win"><div class="win-title">Jefe Semanal</div>
+    <p class="center" style="margin-top:0"><b class="red">${bossName()}</b></p>
+    ${b.defeated ? '<p class="center" style="color:var(--accent)">✔ Derrotado esta semana</p>'
+      : `<div class="row label"><span>HP</span><span>${b.hp} / ${b.max}</span></div>${bar('hp', b.hp, b.max)}
+      <p class="muted" style="font-size:13px;margin:4px 0">Todo lo que hacés le hace daño: diaria ${BOSS_DMG.daily} · rutina ${BOSS_DMG.routine} · mazmorra ${BOSS_DMG.dungeon} · secreta ${BOSS_DMG.secret} · emergencia ${BOSS_DMG.emergency} · prueba ${BOSS_DMG.test} · secundaria ${BOSS_DMG.side} · diario ${BOSS_DMG.journal}.<br>
+      Quedan ${days} día${days === 1 ? '' : 's'}. Recompensa: 300 XP, 300 de oro, Caja y Llave.</p>`}
+    ${b.hits.length ? `<div class="muted" style="font-size:13px">Últimos golpes: ${b.hits.map((h) => `${HIT_LABEL[h.kind]} −${h.dmg}`).join(' · ')}</div>` : ''}
+  </div>`;
+}
+
+/* ================= GUIDED TRAINING ================= */
+
+let guide = null; // { id, steps, i, end, left, started }
+
+function startGuide(id) {
+  const r = buildRoutine(id);
+  const steps = [];
+  for (let set = 1; set <= r.sets; set++) {
+    r.ex.forEach((e, k) => {
+      steps.push({ kind: 'ex', e, set });
+      const last = set === r.sets && k === r.ex.length - 1;
+      if (r.rest && !last) steps.push({ kind: 'rest', sec: r.rest });
+    });
+  }
+  guide = { id, name: r.name, sets: r.sets, steps, i: 0, end: null, left: null, started: Date.now() };
+  armStep();
+  render(); window.scrollTo(0, 0);
+}
+
+function guideSecs(st) { return st.kind === 'rest' ? st.sec : st.e.unit === 'sec' ? st.e.v : 0; }
+
+function armStep() {
+  const st = guide.steps[guide.i];
+  guide.left = null;
+  // Rests start on their own; timed exercises wait for "Iniciar" so the user can get in position.
+  guide.end = st.kind === 'rest' ? Date.now() + st.sec * 1000 : null;
+}
+
+function guideNext(delta = 1) {
+  guide.i += delta;
+  if (guide.i < 0) guide.i = 0;
+  if (guide.i >= guide.steps.length) return finishGuide();
+  armStep(); render();
+}
+
+function finishGuide() {
+  const g = guide;
+  guide = null;
+  S.daily.timer.acc += (Date.now() - g.started) / 1000;
+  if (routineDone(g.id)) { notify('Entrenamiento', `[${g.name}]\n\nEntrenamiento terminado.`); save(); render(); return; }
+  completeRoutine(g.id);
+}
+
+function viewGuide() {
+  const st = guide.steps[guide.i];
+  const next = guide.steps.slice(guide.i + 1).find((x) => x.kind === 'ex');
+  const secs = guideSecs(st);
+  const left = guide.end ? Math.max(0, (guide.end - Date.now()) / 1000) : guide.left ?? secs;
+  let body;
+  if (st.kind === 'rest') {
+    body = `<div class="label center">Descanso</div>
+      <div class="center big-level" style="font-size:64px;margin:10px 0" id="gtime">${fmtMin(Math.ceil(left))}</div>
+      <button class="btn block" id="gSkip">Saltar descanso</button>`;
+  } else if (st.e.unit === 'sec') {
+    body = `<div class="label center">Serie ${st.set} / ${guide.sets}</div>
+      <p class="msg center" style="font-size:24px;margin:8px 0"><b>${st.e.name}</b></p>
+      <div class="center big-level" style="font-size:64px;margin:10px 0" id="gtime">${fmtMin(Math.ceil(left))}</div>
+      <button class="btn block" id="gToggle">${guide.end ? 'Pausar' : guide.left != null ? 'Reanudar' : 'Iniciar'}</button>
+      <button class="btn block small" id="gSkip">Hecho, siguiente</button>`;
+  } else {
+    body = `<div class="label center">Serie ${st.set} / ${guide.sets}</div>
+      <p class="msg center" style="font-size:24px;margin:8px 0"><b>${st.e.name}</b></p>
+      <div class="center big-level" style="font-size:64px;margin:10px 0">${st.e.v}</div>
+      <div class="label center">repeticiones</div>
+      <button class="btn block" id="gSkip">Hecho ✓</button>`;
+  }
+  return `<div class="win"><div class="win-title">${guide.name}</div>
+    <div class="row label"><span>Paso ${guide.i + 1} / ${guide.steps.length}</span><span>${fmt((Date.now() - guide.started) / 1000)}</span></div>
+    ${bar('', guide.i, guide.steps.length)}
+    ${body}
+    <p class="muted center" style="font-size:14px">${next ? `Siguiente: ${next.e.name}${next.e.unit === 'sec' ? ` (${fmtMin(next.e.v)})` : ` (${next.e.v})`}` : 'Último paso'}</p>
+    <div class="row"><button class="btn small" id="gPrev" ${guide.i ? '' : 'disabled'}>‹ Anterior</button>
+      <button class="btn small danger" id="gExit">Salir</button></div>
+  </div>`;
+}
+
+function tickGuide() {
+  if (!guide || !guide.end) return;
+  const left = (guide.end - Date.now()) / 1000;
+  const el = $('#gtime');
+  if (left <= 0) {
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    guideNext();
+  } else if (el) el.textContent = fmtMin(Math.ceil(left));
+}
+
+/* ================= HUNTER CARD ================= */
+
+let cardBlob = null;
+
+async function makeCard() {
+  const W = 1080, H = 1350;
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const css = getComputedStyle(document.body);
+  const col = (v) => css.getPropertyValue(v).trim();
+  const line = col('--line'), accent = col('--accent'), gold = col('--gold'), text = col('--text'), muted = col('--muted');
+  // Don't hang when offline and the web font can't load.
+  try { await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]); } catch (e) { /* ignore */ }
+  const F = (size, w = 600) => `${w} ${size}px Rajdhani, "Segoe UI", sans-serif`;
+  const g = x.createRadialGradient(W / 2, 0, 100, W / 2, 300, 1300);
+  g.addColorStop(0, S.theme === 'varka' ? '#123a36' : '#0c1d38');
+  g.addColorStop(1, S.theme === 'varka' ? '#06110f' : '#050a14');
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  x.strokeStyle = line; x.lineWidth = 4; x.shadowColor = line; x.shadowBlur = 24;
+  x.strokeRect(50, 50, W - 100, H - 100);
+  x.shadowBlur = 0;
+  x.textAlign = 'center';
+  x.fillStyle = accent; x.font = F(44, 700);
+  x.fillText(themed(S.theme === 'varka' ? 'LICENCIA DE CABALLERO DE FAVONIUS' : 'LICENCIA DE CAZADOR'), W / 2, 140);
+  x.fillStyle = text; x.font = F(96, 700);
+  x.fillText(S.name, W / 2, 270);
+  x.font = F(40); x.fillStyle = muted;
+  x.fillText(themed(`${S.job === 'Ninguno' ? 'Sin clase' : S.job} · ${S.title ? TITLES[S.title].name : 'Sin título'}`), W / 2, 330);
+  // level + rank
+  x.fillStyle = text; x.font = F(180, 700);
+  x.fillText(String(S.level), W / 2 - 200, 560);
+  x.font = F(36); x.fillStyle = muted; x.fillText('NIVEL', W / 2 - 200, 610);
+  x.fillStyle = gold; x.font = F(rank().length > 3 ? 64 : 160, 700);
+  x.fillText(rank(), W / 2 + 200, 560);
+  x.font = F(36); x.fillStyle = muted; x.fillText('RANGO', W / 2 + 200, 610);
+  // stats
+  x.strokeStyle = line; x.lineWidth = 2; x.beginPath(); x.moveTo(120, 670); x.lineTo(W - 120, 670); x.stroke();
+  Object.entries(STATS).forEach(([k, [, ab]], i) => {
+    const cx = 160 + i * 190;
+    x.fillStyle = muted; x.font = F(34); x.fillText(ab, cx, 730);
+    x.fillStyle = text; x.font = F(64, 700); x.fillText(String(S.stats[k]), cx, 800);
+  });
+  x.beginPath(); x.moveTo(120, 850); x.lineTo(W - 120, 850); x.stroke();
+  // records
+  const best = (id) => {
+    const l = S.tests[id] || [];
+    if (!l.length) return '—';
+    const v = TESTS[id].lower ? Math.min(...l.map((r) => r.v)) : Math.max(...l.map((r) => r.v));
+    return fmtTest(id, v);
+  };
+  const rows = [
+    ['Racha actual', `${S.streak} días (mejor ${S.bestStreak})`],
+    ['Misiones diarias', String(S.totalDaily)],
+    ['Mazmorras despejadas', String(S.dungeons)],
+    ['Flexiones seguidas', best('push')],
+    ['1 km', best('run')],
+  ];
+  x.textAlign = 'left';
+  rows.forEach(([k, v], i) => {
+    const y = 920 + i * 70;
+    x.fillStyle = muted; x.font = F(40); x.fillText(themed(k), 140, y);
+    x.textAlign = 'right'; x.fillStyle = text; x.font = F(44, 700); x.fillText(v, W - 140, y);
+    x.textAlign = 'left';
+  });
+  x.textAlign = 'center'; x.fillStyle = muted; x.font = F(30);
+  x.fillText(themed('El Sistema · agustinbacchiega.github.io/SL'), W / 2, H - 90);
+  return new Promise((res) => c.toBlob(res, 'image/png'));
+}
+
+async function showCard() {
+  const btn = $('#card');
+  if (btn) { btn.disabled = true; btn.textContent = 'Generando…'; }
+  cardBlob = await makeCard();
+  if (btn) { btn.disabled = false; btn.textContent = themed('🪪 Tarjeta de cazador'); }
+  const url = URL.createObjectURL(cardBlob);
+  notify('Tarjeta de Cazador', '', {
+    html: `<img src="${url}" alt="Tarjeta" style="width:100%;border:1px solid var(--line);border-radius:4px">
+      <button class="btn block" id="cardShare">Compartir</button>`,
+    ok: 'Cerrar',
+  });
+}
+
+async function shareCard() {
+  if (!cardBlob) return;
+  const file = new File([cardBlob], 'tarjeta-cazador.png', { type: 'image/png' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Mi tarjeta de cazador' }); return; }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(cardBlob); a.download = 'tarjeta-cazador.png'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
 /* ================= RENDER ================= */
 
 const $ = (s) => document.querySelector(s);
@@ -1164,6 +1417,9 @@ function tickTimers() {
     const left = (S.event.until - Date.now()) / 1000;
     if (left <= 0) render(); else emg.textContent = fmt(left);
   }
+  tickGuide();
+  const gclock = guide && document.querySelector('#app .row.label span:last-child');
+  if (gclock) gclock.textContent = fmt((Date.now() - guide.started) / 1000);
   const pen = $('#pen');
   if (pen) pen.textContent = fmt(penaltyLeft());
   if (S.penalty && S.penalty.until && penaltyLeft() <= 0 && !S.penalty.notified) {
@@ -1200,6 +1456,7 @@ function render() {
   const app = $('#app');
   if (!S.awakened) { $('#tabs').hidden = true; app.innerHTML = viewAwaken(); bindAwaken(); return; }
   if (!S.profile || evalDraft) { $('#tabs').hidden = true; app.innerHTML = themed(viewEval()); return; }
+  if (guide) { $('#tabs').hidden = true; app.innerHTML = themed(viewGuide()); return; }
   $('#tabs').hidden = false;
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   decayFatigue();
@@ -1380,6 +1637,7 @@ function saveJournal(el, final) {
   if (final && d === today() && j.text.trim().length >= 10 && !j.xp) {
     j.xp = true;
     const xp = gainXP(15);
+    hitBoss('journal');
     notify('Diario', `Entrada del diario guardada.\n\nXP +${xp}`);
   }
   save();
@@ -1399,6 +1657,7 @@ function viewDay(d) {
   if (L.secret) rows.push('★ Misión secreta: Superar los límites');
   (L.routines || []).forEach((id) => rows.push(`• Rutina: ${ALL_ROUTINES()[id] ? ALL_ROUTINES()[id].name : id}`));
   (L.side || []).forEach((n) => rows.push(`◆ ${esc(n)}`));
+  if (L.boss) rows.push(`👑 Jefe semanal derrotado: ${L.boss}`);
   if (L.dungeon) rows.push(`⚔ Mazmorra despejada: ${L.dungeon}`);
   if (L.penalty) rows.push(L.survived ? '☠ Zona de Castigo: sobreviviste' : '☠ Zona de Castigo');
   if (L.timer) rows.push(`⏱ Tiempo entrenado: ${fmt(L.timer)}`);
@@ -1458,6 +1717,7 @@ function viewStatus() {
     <div class="row"><span class="label">Racha</span><b>${S.streak} días (mejor: ${S.bestStreak})</b></div>
     ${S.shadows.length ? `<div class="row"><span class="label">Ejército de sombras</span><b style="color:var(--purple)">${S.shadows.length}</b></div>` : ''}
   </div>
+  <button class="btn block" id="card" style="margin:-4px 0 16px">🪪 Tarjeta de cazador</button>
   ${viewCalendar()}
   ${viewProfile()}
   <div class="win"><div class="win-title">Habilidades</div>
@@ -1493,6 +1753,7 @@ function viewQuests() {
       ${hasSkill('Sigilo') ? `<button class="btn block" id="stealth" ${S.mp < 100 || (S.stealthUsed && Date.now() - S.stealthUsed < 7 * 864e5) ? 'disabled' : ''}>Usar [Sigilo] (100 MP, 1/semana)</button>` : ''}
     </div>`;
   }
+  html += viewBoss();
   html += viewEvent();
   if (S.theme === 'varka') {
     html += `<div class="win"><div class="win-title">Carta del Gran Maestro</div>
@@ -1687,6 +1948,7 @@ document.addEventListener('click', (ev) => {
   if (d.ans) { evalDraft.answers[QUESTIONS[evalDraft.step].id] = d.ans; evalDraft.step++; render(); return; }
   if (d.rest) { rest = { end: Date.now() + d.rest * 1000, label: d.label }; tickTimers(); return; }
   if (d.routine) return completeRoutine(d.routine);
+  if (d.guide) return startGuide(d.guide);
   if (d.day) { calSel = d.day; render(); return; }
   if (d.mood) {
     S.journal = S.journal || {};
@@ -1729,6 +1991,15 @@ document.addEventListener('click', (ev) => {
     case 'claim': return claimDaily();
     case 'survive': return clearPenalty();
     case 'emgDone': return completeEmergency();
+    case 'card': return showCard();
+    case 'cardShare': return shareCard();
+    case 'gSkip': return guideNext();
+    case 'gPrev': return guideNext(-1);
+    case 'gExit': guide = null; render(); return;
+    case 'gToggle':
+      if (guide.end) { guide.left = (guide.end - Date.now()) / 1000; guide.end = null; }
+      else guide.end = Date.now() + (guide.left ?? guideSecs(guide.steps[guide.i])) * 1000;
+      render(); return;
     case 'blockOn': return activateBlock();
     case 'ptaskDone':
       S.penalty.taskDone = true; save();
@@ -1829,9 +2100,10 @@ function maybeRemind() {
 rollover();
 ensureEquipped();
 rollEvent();
+ensureBoss();
 render();
 setInterval(() => {
-  if (rollover()) { rollEvent(); render(); }
+  if (rollover()) { rollEvent(); ensureBoss(); render(); }
   maybeRemind();
   const t = $('#timer');
   if (t) t.textContent = timeLeft();
