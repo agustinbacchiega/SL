@@ -396,6 +396,9 @@ const VARKA = [
   ['comerciante ambulante', 'mercader de Liyue de paso'],
   ['Bendición del Sistema', 'Bendición de Barbatos'],
   ['Pruebas de Fuerza', 'Pruebas de la Orden'],
+  ['Entradas de diario', 'Entradas de la bitácora'],
+  ['>Diario<', '>Bitácora de expedición<'],
+  ['Entrada del diario', 'Entrada de la bitácora'],
   ['Prueba de Fuerza', 'Prueba de la Orden'],
   ['la misión diaria', 'el entrenamiento de Favonius'],
   ['La misión diaria', 'El entrenamiento de Favonius'],
@@ -561,6 +564,7 @@ function defaultState() {
     profile: null, weights: [], routineLog: [], log: null,
     theme: 'sl', themeUnlocked: false,
     equipped: null, event: null, eventDay: null, tests: {}, prs: 0, emergencies: 0, sideDone: 0, ach: {},
+    journal: {},
   };
 }
 
@@ -579,6 +583,7 @@ function load() {
       st.daily.timer = st.daily.timer || { acc: 0, start: null };
       st.block = Object.assign(defaultState().block, st.block);
       st.tests = st.tests || {};
+      st.journal = st.journal || {};
       if (!st.log) {
         // Build the calendar from what older versions already stored.
         st.log = {};
@@ -1085,6 +1090,7 @@ const ACHIEVEMENTS = [
   ['emergency', 'Misiones de emergencia superadas', () => S.emergencies || 0, [1, 5, 10, 25]],
   ['side', 'Misiones secundarias completadas', () => S.sideDone || 0, [10, 50, 150, 500]],
   ['weight', 'Registros de peso', () => S.weights.length, [5, 20, 50, 100]],
+  ['journal', 'Entradas de diario', () => Object.values(S.journal || {}).filter((j) => j.text).length, [1, 7, 30, 100, 365]],
 ];
 const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
 const achReward = (i) => `${100 * (i + 1)} de oro${i >= 2 ? ' · Caja Aleatoria' : ''}${i >= 3 ? ' · +1 punto de habilidad' : ''}`;
@@ -1331,7 +1337,7 @@ function viewCalendar() {
     const st = dayStatus(d);
     const L = (S.log || {})[d] || {};
     if (st === 'done') doneCount++;
-    const marks = (L.secret ? '★' : '') + (L.routines ? '•' : '') + (L.dungeon ? '⚔' : '');
+    const marks = (L.secret ? '★' : '') + (L.routines ? '•' : '') + (L.dungeon ? '⚔' : '') + ((S.journal || {})[d] && S.journal[d].text ? '✎' : '');
     cells += `<button class="cal-d ${st} ${d === calSel ? 'sel' : ''} ${d > today() ? 'future' : ''}" data-day="${d}">${i}<small>${marks}</small></button>`;
   }
   return `<div class="win"><div class="win-title">Calendario</div>
@@ -1341,10 +1347,42 @@ function viewCalendar() {
     <div class="cal">${['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d) => `<span class="label">${d}</span>`).join('')}${cells}</div>
     <p class="muted center" style="font-size:13px;margin:6px 0">
       <span class="cal-key done"></span> Diaria completa <span class="cal-key penalty"></span> Castigo <span class="cal-key partial"></span> Otra actividad
-      · ★ secreta · • rutina · ⚔ mazmorra</p>
+      · ★ secreta · • rutina · ⚔ mazmorra · ✎ diario</p>
     <div class="row"><span class="label">Diarias completadas este mes</span><b>${doneCount}</b></div>
     <hr>${viewDay(calSel)}
+    ${viewJournal(calSel)}
   </div>`;
+}
+
+const MOODS = ['😫', '😕', '😐', '🙂', '🔥'];
+
+function viewJournal(d) {
+  if (d > today()) return '';
+  const j = (S.journal || {})[d] || {};
+  return `<hr><div class="row"><span class="label">Diario</span>
+      <span>${MOODS.map((m, i) => `<button class="btn small mood ${j.mood === i ? 'on' : ''}" data-mood="${i}" title="Ánimo">${m}</button>`).join('')}</span></div>
+    <textarea id="journal" data-date="${d}" maxlength="2000" rows="5"
+      placeholder="¿Cómo te fue hoy? ¿Qué entrenaste, cómo te sentiste, qué querés mejorar mañana?">${esc(j.text || '')}</textarea>
+    <p class="muted" style="font-size:13px;margin:4px 0 0">${d === today() && !j.xp ? 'Escribir la entrada de hoy da +15 XP. ' : ''}Se guarda solo mientras escribís.</p>`;
+}
+
+let journalTimer = null;
+function saveJournal(el, final) {
+  const d = el.dataset.date;
+  S.journal = S.journal || {};
+  const j = (S.journal[d] = S.journal[d] || {});
+  j.text = el.value.slice(0, 2000);
+  if (!j.text && j.mood == null) delete S.journal[d];
+  clearTimeout(journalTimer);
+  // While typing, write straight to storage: save() could pop an achievement over the keyboard.
+  if (!final) { journalTimer = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } }, 600); return; }
+  // XP only for today's entry, once, when the user finishes writing (on blur).
+  if (final && d === today() && j.text.trim().length >= 10 && !j.xp) {
+    j.xp = true;
+    const xp = gainXP(15);
+    notify('Diario', `Entrada del diario guardada.\n\nXP +${xp}`);
+  }
+  save();
 }
 
 function viewDay(d) {
@@ -1650,6 +1688,12 @@ document.addEventListener('click', (ev) => {
   if (d.rest) { rest = { end: Date.now() + d.rest * 1000, label: d.label }; tickTimers(); return; }
   if (d.routine) return completeRoutine(d.routine);
   if (d.day) { calSel = d.day; render(); return; }
+  if (d.mood) {
+    S.journal = S.journal || {};
+    const j = (S.journal[calSel] = S.journal[calSel] || {});
+    j.mood = j.mood === Number(d.mood) ? null : Number(d.mood);
+    save(); render(); return;
+  }
   if (d.cal) { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + Number(d.cal), 1); render(); return; }
   if (d.dstep) return dungeonStep(Number(d.dstep));
   if (d.test) return recordTest(d.test);
@@ -1715,7 +1759,12 @@ document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Enter' && ev.target.id === 'qnum') $('#qnext').click();
 });
 
+document.addEventListener('input', (ev) => {
+  if (ev.target.id === 'journal') saveJournal(ev.target, false);
+});
+
 document.addEventListener('change', (ev) => {
+  if (ev.target.id === 'journal') { saveJournal(ev.target, true); return; }
   const el = ev.target;
   if (el.dataset.target) {
     const v = Math.max(el.dataset.target === 'run' ? 0.5 : 1, Number(el.value) || 0);

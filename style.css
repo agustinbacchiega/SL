@@ -150,3 +150,7 @@ body.varka:not(.penalty) {
 }
 body.varka:not(.penalty) .bar > i { background: linear-gradient(90deg, #1f8f7a, #a8f5e2); }
 body.varka .win-title { font-family: Georgia, "Times New Roman", serif; letter-spacing: 2px; }
+textarea { font: inherit; color: var(--text); background: #0a1a30; border: 1px solid var(--line); border-radius: 4px;
+  padding: 8px 10px; width: 100%; margin-top: 8px; resize: vertical; }
+.btn.mood { padding: 2px 6px; margin-left: 2px; font-size: 16px; box-shadow: none; opacity: .5; }
+.btn.mood.on { opacity: 1; box-shadow: 0 0 8px var(--glow); }

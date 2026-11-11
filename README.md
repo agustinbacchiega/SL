@@ -50,6 +50,7 @@ Las repeticiones y series se ajustan a tu nivel, la cantidad de ejercicios a tu 
 - **Mazmorras raras**: Puertas Rojas (3 oleadas, más XP) y la Mazmorra Doble (muy rara), con jefes variados por rango.
 - **Eventos aleatorios**: misiones de emergencia con tiempo límite, comerciante con descuentos, puertas con llaves gratis, bendiciones de XP y cofres.
 - **Pruebas de fuerza**: flexiones máximas, sentadillas en 1 minuto, plancha, burpees en 3 minutos y 1 km. Registran récords y desbloquean títulos.
+- **Diario**: en el Calendario, cada día tiene una entrada de texto y un estado de ánimo. La de hoy da +15 XP y los días con entrada se marcan con ✎.
 - **Logros** con 4 o 5 niveles cada uno y recompensas, y **títulos con requisitos visibles** (salvo los secretos).
 
 ## Bloqueo de apps en el castigo
