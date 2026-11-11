@@ -163,6 +163,77 @@ const ROUTINES = {
     ['Respiración 4-7-8', 120, 'sec', [], null]] },
 };
 
+// Varka's regimen: loaded carries, long marches and combat drills, the kind of
+// training a Grand Master leading a years-long expedition would demand.
+const ROUTINES_VARKA = {
+  juramento: { name: 'Juramento del Recluta', sub: 'Cuerpo completo · principiante', stat: 'vit', rest: 60, scale: 'str', lore: 'Todo caballero empezó jurando proteger Mondstadt con un cuerpo todavía débil.', ex: [
+    ['Sentadillas', 10, 'rep', ['knee'], 'Puente de glúteo'],
+    ['Flexiones inclinadas en una mesa', 8, 'rep', ['shoulder'], 'Flexiones en pared'],
+    ['Puente de glúteo', 12, 'rep', [], null],
+    ['Plancha', 20, 'sec', ['shoulder'], 'Dead bug lento'],
+    ['Bird dog (cada lado)', 8, 'rep', [], null],
+    ['Marcha en el lugar', 120, 'sec', [], null]] },
+  mandoble: { name: 'Entrenamiento del Mandoble', sub: 'Fuerza total con carga · mochila con peso', stat: 'str', rest: 75, scale: 'str', lore: 'Un mandoble no se blande con los brazos: se blande con las piernas, la cadera y el núcleo.', ex: [
+    ['Swing de mochila (como pesa rusa)', 15, 'rep', ['back'], 'Puente de glúteo con mochila'],
+    ['Sentadilla abrazando la mochila', 12, 'rep', ['knee'], 'Puente de glúteo con mochila'],
+    ['Remo con mochila a una mano', 10, 'rep', ['back'], 'Face pull con toalla'],
+    ['Press de hombros con mochila', 10, 'rep', ['shoulder'], 'Curl de bíceps con mochila'],
+    ['Leñador: rotación con mochila (cada lado)', 10, 'rep', ['back'], 'Pallof con toalla'],
+    ['Plancha con mochila en la espalda', 30, 'sec', ['shoulder', 'back'], 'Dead bug lento']] },
+  expedicion: { name: 'Marcha de la Expedición', sub: 'Resistencia · marcha con carga', stat: 'vit', rest: 0, scale: 'run', sets: 1, lore: 'La expedición recorre tierras lejanas a pie, con todo el equipo a cuestas.', ex: [
+    ['Marcha rápida con mochila cargada', 1200, 'sec', ['knee', 'back'], 'Caminata rápida sin carga'],
+    ['Subir y bajar escaleras', 300, 'sec', ['knee'], 'Caminata rápida en llano'],
+    ['Paseo del granjero (bolsas pesadas)', 60, 'sec', ['back'], 'Marcha con brazos arriba'],
+    ['Caminata de recuperación', 300, 'sec', [], null]] },
+  espinadragon: { name: 'Ascenso al Espinadragón', sub: 'Piernas y resistencia de montaña', stat: 'agi', rest: 60, scale: 'str', lore: 'En la montaña helada, cada paso cuesta el doble. Por eso se entrena ahí.', ex: [
+    ['Subidas al escalón (cada pierna)', 12, 'rep', ['knee'], 'Puente de glúteo a una pierna'],
+    ['Zancadas caminando', 16, 'rep', ['knee'], 'Patada de glúteo en cuadrupedia'],
+    ['Sentadilla isométrica en pared', 45, 'sec', ['knee'], 'Abducción de cadera acostado'],
+    ['Elevación de talones en escalón', 25, 'rep', [], null],
+    ['Burpees', 10, 'rep', ['knee', 'shoulder'], 'Puñetazos al aire (por brazo)'],
+    ['Ducha fría final (opcional)', 60, 'sec', [], null]] },
+  duelo: { name: 'Duelo en el Patio de la Orden', sub: 'Combate · intervalos', stat: 'agi', rest: 20, scale: 'run', rounds: true, lore: 'Los caballeros entrenan en parejas hasta que el cansancio les enseña a no malgastar movimientos.', ex: [
+    ['Boxeo de sombra con guardia alta', 45, 'sec', [], null],
+    ['Estocadas alternas', 30, 'sec', ['knee'], 'Puñetazos rápidos de pie'],
+    ['Sentadilla + bloqueo', 30, 'sec', ['knee'], 'Paso lateral con guardia'],
+    ['Sprawls (burpee sin salto)', 30, 'sec', ['knee', 'shoulder'], 'Boxeo de sombra'],
+    ['Guardia isométrica: brazos al frente', 40, 'sec', ['shoulder'], 'Marcha en el lugar'],
+    ['Mountain climbers', 30, 'sec', ['shoulder'], 'Rodillas al pecho de pie']] },
+  explorador: { name: 'Carreras del Explorador', sub: 'Velocidad · agilidad', stat: 'agi', rest: 40, scale: 'run', rounds: true, lore: 'Los exploradores de la Orden llegan primero y vuelven a avisar. La velocidad salva vidas.', ex: [
+    ['Sprint', 20, 'sec', ['knee'], 'Caminata muy rápida'],
+    ['Skipping alto', 30, 'sec', ['knee'], 'Marcha alta en el lugar'],
+    ['Saltos laterales', 30, 'sec', ['knee'], 'Pasos laterales rápidos'],
+    ['Trote suave', 120, 'sec', ['knee'], 'Caminata rápida']] },
+  muralla: { name: 'La Muralla de Mondstadt', sub: 'Core y estabilidad', stat: 'vit', rest: 30, scale: 'str', lore: 'Un caballero es la muralla que se queda en pie cuando todo lo demás cae.', ex: [
+    ['Plancha', 45, 'sec', ['shoulder'], 'Dead bug lento'],
+    ['Plancha lateral (cada lado)', 30, 'sec', ['shoulder'], 'Pallof con toalla'],
+    ['Dead bug', 12, 'rep', [], null],
+    ['Bird dog (cada lado)', 10, 'rep', [], null],
+    ['Superman', 12, 'rep', ['back'], 'Bird dog lento'],
+    ['Hollow hold', 20, 'sec', ['back'], 'Dead bug lento']] },
+  taberna: { name: 'Descanso en el Obsequio del Ángel', sub: 'Movilidad · recuperación', stat: 'per', rest: 0, scale: null, sets: 1, lore: 'Hasta el Gran Maestro descansa. Recuperarse también es parte del régimen.', ex: [
+    ['Gato-vaca', 60, 'sec', [], null],
+    ['Estiramiento de cadera (cada lado)', 45, 'sec', [], null],
+    ['Estiramiento de isquiotibiales', 45, 'sec', [], null],
+    ['Apertura de pecho en pared', 45, 'sec', [], null],
+    ['Postura del niño', 60, 'sec', [], null],
+    ['Respiración lenta mirando el cielo', 120, 'sec', [], null]] },
+};
+
+const GOAL_ROUTINES_VARKA = {
+  fat: ['duelo', 'expedicion', 'mandoble', 'muralla', 'explorador'],
+  muscle: ['mandoble', 'espinadragon', 'muralla', 'duelo'],
+  recomp: ['mandoble', 'duelo', 'espinadragon', 'muralla', 'expedicion'],
+  endurance: ['expedicion', 'explorador', 'duelo', 'muralla'],
+  health: ['juramento', 'expedicion', 'muralla', 'explorador'],
+};
+
+const ALL_ROUTINES = () => ({ ...ROUTINES, ...ROUTINES_VARKA });
+const RSET = () => (S.theme === 'varka'
+  ? { lib: ROUTINES_VARKA, goals: GOAL_ROUTINES_VARKA, rest: 'taberna', beginner: 'juramento' }
+  : { lib: ROUTINES, goals: GOAL_ROUTINES, rest: 'monarca', beginner: 'despertar' });
+const isRestRoutine = (id) => id === 'monarca' || id === 'taberna';
+
 const GOAL_ROUTINES = {
   fat: ['kasaka', 'lobo', 'legion', 'nucleo', 'igris'],
   muscle: ['igris', 'lobo', 'tank', 'nucleo'],
@@ -175,8 +246,9 @@ const TRAIN_DAYS = [[0, 2, 4], [0, 2, 4], [0, 1, 3, 4], [0, 1, 2, 4, 5]];
 
 function recommended() {
   const a = S.profile.answers;
-  let list = [...GOAL_ROUTINES[a.goal]];
-  if ((a.pushups === '0' || a.activity === '0') && list[0] !== 'despertar') list = ['despertar', ...list.filter((r) => r !== 'despertar')];
+  const { goals, beginner } = RSET();
+  let list = [...goals[a.goal]];
+  if ((a.pushups === '0' || a.activity === '0') && list[0] !== beginner) list = [beginner, ...list.filter((r) => r !== beginner)];
   return list;
 }
 
@@ -185,12 +257,12 @@ function weekPlan() {
   const days = TRAIN_DAYS[+S.profile.answers.activity];
   return DAYS.map((d, i) => {
     const k = days.indexOf(i);
-    return k >= 0 ? rec[k % rec.length] : i === 6 ? 'monarca' : null;
+    return k >= 0 ? rec[k % rec.length] : i === 6 ? RSET().rest : null;
   });
 }
 
 function buildRoutine(id) {
-  const R = ROUTINES[id], a = S.profile.answers;
+  const R = ALL_ROUTINES()[id], a = S.profile.answers;
   const lvl = R.scale === 'run' ? +a.run : R.scale === 'str' ? +a.pushups : 1;
   const f = R.scale ? [0.6, 0.8, 1, 1.3][lvl] : 1;
   const count = Math.min(R.ex.length, { 15: 3, 30: 4, 45: 5, 60: 6 }[a.time]);
@@ -211,13 +283,13 @@ function completeRoutine(id) {
   if (routineDone(id)) return;
   S.routineLog.push({ date: today(), id });
   dayLog().routines = pushUnique(dayLog().routines || [], id);
-  const R = ROUTINES[id];
-  const xp = gainXP(id === 'monarca' ? 30 : 60);
+  const R = ALL_ROUTINES()[id];
+  const xp = gainXP(isRestRoutine(id) ? 30 : 60);
   decayFatigue();
-  if (id === 'monarca') S.fatigue = Math.max(0, S.fatigue - 30);
+  if (isRestRoutine(id)) S.fatigue = Math.max(0, S.fatigue - 30);
   else S.fatigue = Math.min(100, S.fatigue + 15);
   const week = S.routineLog.filter((r) => Date.now() - new Date(r.date) < 7 * 864e5).length;
-  notify('Entrenamiento Completado', `[${R.name}]\n\nXP +${xp}\n${id === 'monarca' ? 'Fatiga -30' : 'Fatiga +15'}\n\nRutinas esta semana: ${week}`);
+  notify('Entrenamiento Completado', `[${R.name}]\n\nXP +${xp}\n${isRestRoutine(id) ? 'Fatiga -30' : 'Fatiga +15'}\n\nRutinas esta semana: ${week}`);
   save(); render();
 }
 
@@ -227,7 +299,8 @@ function routineCard(id, open) {
   return `<details class="routine" ${open ? 'open' : ''}><summary>
       <b>${r.name}</b> ${done ? '<span class="check">✔</span>' : ''}<span class="tag">${STATS[r.stat][1]}</span>
       <div class="desc muted">${r.sub} · ~${r.mins} min</div></summary>
-    <p class="muted" style="font-size:14px;margin:6px 0">${r.sets > 1 ? `${r.sets} ${id === 'kasaka' ? 'rondas' : 'series'}` : '1 vuelta'}${r.rest ? ` · descanso ${r.rest} s entre ejercicios` : ''}</p>
+    ${r.lore ? `<p style="font-size:14px;font-style:italic;margin:6px 0;color:var(--accent)">"${r.lore}"</p>` : ''}
+    <p class="muted" style="font-size:14px;margin:6px 0">${r.sets > 1 ? `${r.sets} ${id === 'kasaka' || r.rounds ? 'rondas' : 'series'}` : '1 vuelta'}${r.rest ? ` · descanso ${r.rest} s entre ejercicios` : ''}</p>
     ${r.ex.map((e) => `<div class="goal"><span class="name">${e.name}${e.adapted ? ' <span class="tag">adaptado</span>' : ''}</span>
       ${e.unit === 'sec'
         ? `<button class="btn small" data-rest="${e.v}" data-label="${esc(e.name)}">⏱ ${fmtMin(e.v)}</button>`
@@ -246,18 +319,18 @@ function viewRoutines() {
   return `<div class="win"><div class="win-title">Plan Semanal</div>
     <p class="center muted" style="margin-top:0;font-size:15px">Objetivo: <b>${GOALS[a.goal]}</b> · ${TRAIN_DAYS[+a.activity].length} días de entrenamiento${a.injury !== 'none' ? ' · ejercicios adaptados a tu lesión' : ''}</p>
     ${plan.map((id, i) => `<div class="row" style="padding:5px 8px;${i === ti ? 'border:1px solid var(--line);border-radius:4px;box-shadow:0 0 8px var(--glow)' : ''}">
-      <span class="label">${DAYS[i]}</span><span>${id ? ROUTINES[id].name : '<span class="muted">Descanso</span>'}${id && routineDone(id) ? ' ✔' : ''}</span></div>`).join('')}
+      <span class="label">${DAYS[i]}</span><span>${id ? ALL_ROUTINES()[id].name : '<span class="muted">Descanso</span>'}${id && routineDone(id) ? ' ✔' : ''}</span></div>`).join('')}
   </div>
   <div class="win"><div class="win-title">Entrenamiento de Hoy</div>
-    ${todayId ? routineCard(todayId, true) : `<p class="center">Hoy es día de descanso.<br><span class="muted">La misión diaria sigue activa. Si querés moverte, hacé <b>Respiración del Monarca</b>.</span></p>`}
+    ${todayId ? routineCard(todayId, true) : `<p class="center">Hoy es día de descanso.<br><span class="muted">La misión diaria sigue activa. Si querés moverte, hacé <b>${ALL_ROUTINES()[RSET().rest].name}</b>.</span></p>`}
     <p class="center timer" id="rest" style="min-height:1.2em">${rest ? `${rest.label || 'Descanso'}: ${Math.ceil((rest.end - Date.now()) / 1000)} s` : ''}</p>
   </div>
   <div class="win"><div class="win-title">Recomendadas</div>
     ${rec.filter((id) => id !== todayId).map((id) => routineCard(id)).join('')}
-    ${todayId !== 'monarca' ? routineCard('monarca') : ''}
+    ${todayId !== RSET().rest ? routineCard(RSET().rest) : ''}
   </div>
   <div class="win"><div class="win-title">Otras Rutinas</div>
-    ${Object.keys(ROUTINES).filter((id) => !rec.includes(id) && id !== 'monarca' && id !== todayId).map((id) => routineCard(id)).join('')}
+    ${Object.keys(RSET().lib).filter((id) => !rec.includes(id) && id !== RSET().rest && id !== todayId).map((id) => routineCard(id)).join('')}
   </div>`;
 }
 
@@ -285,6 +358,27 @@ const VARKA = [
   ['Mazmorra de rango', 'Dominio de rango'],
   ['mazmorras', 'dominios'], ['mazmorra', 'dominio'], ['Mazmorra', 'Dominio'],
   ['Castillo del Demonio', 'Templo del Lobo del Norte'],
+  ['Dominio de rango E', 'Dominio del Bosque Susurrante'],
+  ['Dominio de rango D', 'Dominio del Valle Estelar'],
+  ['Dominio de rango C', 'Dominio del Cabo del Juramento'],
+  ['Dominio de rango B', 'Dominio del Espinadragón'],
+  ['Dominio de rango A', 'Dominio de la Guarida de Stormterror'],
+  ['Poción de Curación', 'Pollo Dulce Madame'],
+  ['Poción de Maná', 'Jugo de manzana de Mondstadt'],
+  ['Poción de Recuperación de Fatiga', 'Té de menta del Viñedo del Amanecer'],
+  ['Piedra Rúnica: Bonus', 'Sello de la Orden'],
+  ['El que Superó la Adversidad', 'Superviviente de la Muralla'],
+  ['El que Superó sus Límites', 'Fuerza del Gran Maestro'],
+  ['Cazador de Lobos', 'Amigo de Wolvendom'],
+  ['Coraje del Débil', 'Guardia del Alba'],
+  ['Voluntad Inquebrantable', 'Disciplina de Favonius'],
+  ['Cazador de Demonios', 'Veterano de la Expedición'],
+  ['Cuerpo Despertado', 'Forjado por el Viento'],
+  ['Superar los límites', 'La fuerza del Gran Maestro'],
+  ['[Sprint]', '[Paso del Viento]'], ['>Sprint<', '>Paso del Viento<'],
+  ['Sed de Sangre', 'Rugido del Lobo del Norte'],
+  ['[Sigilo]', '[Planeador del Viento]'], ['>Sigilo<', '>Planeador del Viento<'],
+  ['Daga Mortal', 'Corte del Mandoble'],
   ['Lycan de Colmillos de Acero', 'Mitachurl con escudo'],
   ['Kasaka, la Serpiente Venenosa', 'Lawachurl de Piedra'],
   ['Caballero Sangriento Igris', 'Heraldo del Abismo'],
@@ -445,7 +539,30 @@ function save() {
 const maxHP = () => 100 + (S.level - 1) * 20 + (S.stats.vit - 10) * 10;
 const maxMP = () => 10 + (S.level - 1) * 5 + (S.stats.int - 10) * 10;
 const xpNeeded = (lv = S.level) => Math.round(100 + 40 * lv + 2 * lv * lv);
-const rank = () => RANKS.filter(([lv]) => S.level >= lv).pop()[1];
+const RANKS_VARKA = ['Recluta', 'Escudero', 'Caballero', 'Caballero de Élite', 'Capitán', 'Gran Maestro Adjunto', 'Gran Maestro'];
+const rank = () => {
+  const i = RANKS.filter(([lv]) => S.level >= lv).length - 1;
+  return S.theme === 'varka' ? RANKS_VARKA[i] : RANKS[i][1];
+};
+const EX_VARKA = { pushups: 'Flexiones de caballero', situps: 'Abdominales de escudero', squats: 'Sentadillas del mandoble', run: 'Marcha de expedición' };
+const exLabel = (k) => (S.theme === 'varka' ? EX_VARKA[k] : EXERCISES[k].name);
+
+// Letters "sent" by Varka from the expedition (original flavor text).
+const VARKA_LETTERS = [
+  'Caballeros: la expedición sigue avanzando hacia el norte. Si nosotros caminamos con nieve hasta las rodillas, ustedes pueden completar su entrenamiento de hoy.',
+  'Un caballero no entrena para lucirse en un desfile. Entrena para que, el día que lo necesiten, su cuerpo no le falle.',
+  'Hoy cargamos las provisiones montaña arriba. Al final, los más fuertes no eran los más grandes: eran los que no se detuvieron.',
+  'Jean me escribe que Mondstadt está en buenas manos. Asegúrense de que también lo esté su propio cuerpo.',
+  'La disciplina es un viento constante: no derriba nada en un día, pero con los años mueve montañas.',
+  'Si fallan un día, no se castiguen dos. Levántense, coman bien y vuelvan al patio de entrenamiento.',
+  'Mis piernas recuerdan cada marcha de esta expedición. Las suyas recordarán cada sentadilla.',
+  'Descansar no es rendirse. Hasta el lobo del norte duerme antes de la cacería.',
+  'Un mandoble pesado se vuelve ligero en las manos de quien lo levanta cada día.',
+  'Cuando vuelva a Mondstadt, quiero ver caballeros más fuertes que cuando me fui. Ese es mi único pedido.',
+  'El frío de estas tierras enseña algo simple: el que deja de moverse, pierde.',
+  'Hoy un recluta me preguntó cuál es el secreto de la fuerza. Le respondí: repetirlo mañana.',
+];
+const letterOfDay = () => VARKA_LETTERS[[...today()].reduce((h, c) => h + c.charCodeAt(0), 0) % VARKA_LETTERS.length];
 const hasSkill = (name) => SKILLS.some((s) => s.name === name && (s.job ? S.job !== 'Ninguno' : S.level >= s.lv));
 const titleIs = (id) => S.title === id;
 
@@ -653,7 +770,7 @@ function rollover() {
   } else {
     S.daily = freshDaily(t);
   }
-  if (S.awakened) notify('Misión Diaria', 'La misión diaria [Entrenamiento de fuerza] ha llegado.');
+  if (S.awakened) notify('Misión Diaria', 'La misión diaria [Entrenamiento de fuerza] ha llegado.' + (S.theme === 'varka' ? `\n\nCarta del Gran Maestro:\n<i>"${letterOfDay()}"</i>` : ''));
   save();
   return true;
 }
@@ -971,10 +1088,10 @@ function viewDay(d) {
   if (L.daily) rows.push('✔ Misión diaria completada');
   else if (L.progress && L.targets)
     rows.push(`${isToday ? '◻ Misión diaria en curso' : '✖ Misión diaria incompleta'}: ` +
-      Object.entries(EXERCISES).map(([k, e]) => `${e.name} ${L.progress[k] || 0}/${L.targets[k]}${e.unit}`).join(' · '));
+      Object.entries(EXERCISES).map(([k, e]) => `${exLabel(k)} ${L.progress[k] || 0}/${L.targets[k]}${e.unit}`).join(' · '));
   else if (L.missed) rows.push('✖ Misión diaria incompleta');
   if (L.secret) rows.push('★ Misión secreta: Superar los límites');
-  (L.routines || []).forEach((id) => rows.push(`• Rutina: ${ROUTINES[id] ? ROUTINES[id].name : id}`));
+  (L.routines || []).forEach((id) => rows.push(`• Rutina: ${ALL_ROUTINES()[id] ? ALL_ROUTINES()[id].name : id}`));
   (L.side || []).forEach((n) => rows.push(`◆ ${esc(n)}`));
   if (L.dungeon) rows.push(`⚔ Mazmorra despejada: ${L.dungeon}`);
   if (L.penalty) rows.push(L.survived ? '☠ Zona de Castigo: sobreviviste' : '☠ Zona de Castigo');
@@ -1066,12 +1183,17 @@ function viewQuests() {
       ${hasSkill('Sigilo') ? `<button class="btn block" id="stealth" ${S.mp < 100 || (S.stealthUsed && Date.now() - S.stealthUsed < 7 * 864e5) ? 'disabled' : ''}>Usar [Sigilo] (100 MP, 1/semana)</button>` : ''}
     </div>`;
   }
+  if (S.theme === 'varka') {
+    html += `<div class="win"><div class="win-title">Carta del Gran Maestro</div>
+      <p style="font-style:italic;margin-top:0">"${letterOfDay()}"</p>
+      <p class="muted" style="text-align:right;margin:0">— Varka, desde la expedición</p></div>`;
+  }
   html += `<div class="win"><div class="win-title">Misión Diaria</div>
     <p class="center" style="margin-top:0">[Entrenamiento de fuerza]<br><b>Preparativos para volverse poderoso</b></p>
     ${Object.entries(EXERCISES).map(([k, e]) => {
       const ok = p[k] >= S.targets[k];
       return `<div class="goal ${ok ? 'done' : ''}">
-        <span class="name">${e.name}</span>
+        <span class="name">${exLabel(k)}</span>
         <span class="ctrls">
           <button class="btn small" data-ex="${k}" data-n="${-e.steps[0]}">−</button>
           <button class="btn small" data-ex="${k}" data-n="${e.steps[0]}">+${e.steps[0]}</button>

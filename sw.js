@@ -1,4 +1,4 @@
-const CACHE = 'sistema-v7';
+const CACHE = 'sistema-v8';
 const ASSETS = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {
