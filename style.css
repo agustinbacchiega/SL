@@ -172,3 +172,18 @@ textarea { font: inherit; color: var(--text); background: #0a1a30; border: 1px s
 .gear-r3 b, .gear-r4 b, .gear-r5 b, .gear-r3 small, .gear-r4 small, .gear-r5 small { color: var(--rc); }
 body.varka:not(.penalty) #tabs { background: rgba(6, 17, 15, 0.96); }
 body.penalty #tabs { background: rgba(18, 2, 5, 0.96); }
+
+/* Charts (colors validated for the dark surfaces of both themes) */
+:root { --c1: #2b8fd6; --c2: #b8820f; }
+body.varka { --c1: #249a80; --c2: #b8862a; }
+.chart { margin-top: 6px; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart .grid { stroke: rgba(127, 163, 192, .18); stroke-width: 1; }
+.chart .goal { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 4; }
+.chart .axis { fill: var(--muted); font: 11px var(--font); }
+.chart .series { fill: none; stroke: var(--c1); stroke-width: 2; stroke-linejoin: round; }
+.chart .dot { fill: var(--c1); stroke: #08162c; stroke-width: 2; }
+.chart .hit { fill: transparent; cursor: pointer; }
+.chart-tip { font-size: 13px; text-align: center; min-height: 1.3em; }
+.legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }

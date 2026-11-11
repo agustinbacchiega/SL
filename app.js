@@ -55,6 +55,7 @@ const TITLES = {
   legs: { name: 'Piernas de Acero', desc: 'Prueba de fuerza: 50 sentadillas en 1 minuto.', bonus: 'XP de pruebas de fuerza +25%' },
   wall: { name: 'Muro Inamovible', desc: 'Prueba de fuerza: 3 minutos de plancha.', bonus: 'XP de pruebas de fuerza +25%' },
   engine: { name: 'Motor Incansable', desc: 'Prueba de fuerza: 60 burpees en 3 minutos.', bonus: 'XP de pruebas de fuerza +25%' },
+  srank: { name: 'Cazador de Rango S', desc: 'Obtener rango S en una reevaluación.', bonus: 'Toda la XP +10%' },
   wind: { name: 'Pies de Viento', desc: 'Prueba de fuerza: 1 km en menos de 4:30.', bonus: 'XP de pruebas de fuerza +25%' },
   monarch: { name: 'Monarca de las Sombras', desc: 'Alcanzaste el nivel 100.', bonus: 'Toda la XP +25%' },
 };
@@ -314,7 +315,7 @@ function weekPlan() {
 function buildRoutine(id) {
   const R = ALL_ROUTINES()[id], a = S.profile.answers;
   const lvl = R.scale === 'run' ? +a.run : R.scale === 'str' ? +a.pushups : 1;
-  const f = R.scale ? [0.6, 0.8, 1, 1.3][lvl] : 1;
+  const f = (R.scale ? [0.6, 0.8, 1, 1.3][lvl] : 1) * (isDeload() && R.scale ? 0.7 : 1);
   const count = Math.min(R.ex.length, { 15: 3, 30: 4, 45: 5, 60: 6 }[a.time]);
   const sets = R.sets || [2, 3, 3, 4][lvl];
   const ex = R.ex.slice(0, count).map(([n, amt, unit, avoid, sub]) => {
@@ -383,6 +384,7 @@ function viewRoutines() {
     ${todayId !== RSET().rest ? routineCard(RSET().rest) : ''}
   </div>
   ${viewTests()}
+  ${viewReeval()}
   <div class="win"><div class="win-title">Otras Rutinas</div>
     ${Object.keys(RSET().lib).filter((id) => !rec.includes(id) && id !== RSET().rest && id !== todayId).map((id) => routineCard(id)).join('')}
   </div>`;
@@ -608,6 +610,7 @@ function load() {
   return defaultState();
 }
 function save() {
+  checkRealStats();
   checkAchievements();
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
 }
@@ -657,7 +660,7 @@ function decayFatigue() {
 }
 
 function dailyComplete(d = S.daily) {
-  return Object.keys(S.targets).every((k) => d.progress[k] >= S.targets[k]);
+  return Object.keys(S.targets).every((k) => d.progress[k] >= tgt(k));
 }
 
 /* ================= NOTIFICATIONS ================= */
@@ -727,6 +730,7 @@ function gainXP(base, source) {
   if (source === 'dungeon' && titleIs('red')) mult += 0.2;
   if (titleIs('double')) mult += 0.15;
   if (titleIs('legend')) mult += 0.2;
+  if (titleIs('srank')) mult += 0.1;
   mult += gearBonus().xp;
   if (source === 'routine' && titleIs('disciplined')) mult += 0.25;
   if (source === 'emergency' && titleIs('responder')) mult += 0.5;
@@ -782,7 +786,7 @@ function logExercise(k, amount) {
   if (amount > 0) S.fatigue = Math.min(100, S.fatigue + (k === 'run' ? amount * 4 : amount * 0.15));
 
   // Beyond limits / job change: double every target
-  const doubled = Object.keys(S.targets).every((x) => p[x] >= S.targets[x] * 2);
+  const doubled = Object.keys(S.targets).every((x) => p[x] >= tgt(x) * 2);
   if (doubled && !S.daily.secret) {
     S.daily.secret = true;
     dayLog().secret = true;
@@ -852,7 +856,7 @@ function rollover() {
   if (S.awakened && S.daily.date) {
     const prev = dayLog(S.daily.date);
     prev.progress = { ...S.daily.progress };
-    prev.targets = { ...S.targets };
+    prev.targets = Object.fromEntries(Object.keys(S.targets).map((k) => [k, tgt(k)]));
     const secs = Math.round(timerSec());
     if (secs) prev.timer = secs;
     if (missed) prev.missed = true;
@@ -1539,6 +1543,196 @@ function viewGear() {
   </div>`;
 }
 
+/* ================= DELOAD WEEK ================= */
+
+// Every 6th week the System lowers the load 30% so the body can recover.
+function weekIndex() {
+  if (!S.profile || !S.profile.since) return 0;
+  return Math.round((new Date(weekStart()) - new Date(weekStart(new Date(S.profile.since + 'T12:00')))) / (7 * 864e5));
+}
+const isDeload = () => S.deload !== false && !!S.profile && weekIndex() % 6 === 5;
+const tgt = (k) => {
+  if (!isDeload()) return S.targets[k];
+  return k === 'run' ? Math.max(0.5, Math.round(S.targets[k] * 0.7 * 2) / 2) : Math.max(5, Math.round((S.targets[k] * 0.7) / 5) * 5);
+};
+
+function ensureSince() {
+  if (!S.profile || S.profile.since) return;
+  const days = Object.keys(S.log || {}).sort();
+  S.profile.since = days[0] || today();
+}
+
+function checkDeloadNotice() {
+  if (!isDeload() || S.deloadNotified === weekStart()) return;
+  S.deloadNotified = weekStart();
+  notify('Notificación', 'Semana de descarga.\n\nTu cuerpo acumuló 5 semanas de esfuerzo. Esta semana la misión diaria y las rutinas bajan un 30% para que te recuperes y vuelvas más fuerte.');
+  save();
+}
+
+/* ================= REAL STAT GROWTH ================= */
+
+function totals() {
+  const t = { pushups: 0, situps: 0, squats: 0, run: 0 };
+  for (const L of Object.values(S.log || {})) if (L.progress) for (const k in t) t[k] += Number(L.progress[k]) || 0;
+  t.run = Math.round(t.run * 10) / 10;
+  return t;
+}
+
+// [id, stat, label, value(totals), every]
+const REAL_GAINS = [
+  ['push', 'str', 'Flexiones', (t) => t.pushups, 1000],
+  ['squat', 'str', 'Sentadillas', (t) => t.squats, 1500],
+  ['sit', 'vit', 'Abdominales', (t) => t.situps, 1000],
+  ['km', 'agi', 'Km corridos', (t) => t.run, 25],
+  ['journal', 'int', 'Entradas de diario', () => Object.values(S.journal || {}).filter((j) => j.text).length, 10],
+  ['pr', 'per', 'Récords personales', () => S.prs || 0, 5],
+];
+
+function checkRealStats() {
+  if (!S.awakened || !S.profile) return;
+  S.realGains = S.realGains || {};
+  const t = totals();
+  for (const [id, stat, label, fn, every] of REAL_GAINS) {
+    const earned = Math.floor(fn(t) / every);
+    const had = S.realGains[id] || 0;
+    if (earned > had) {
+      S.stats[stat] += earned - had;
+      S.realGains[id] = earned;
+      notify('Notificación', `Tu cuerpo se fortaleció con el entrenamiento real.\n\n<b>${STATS[stat][1]} +${earned - had}</b>\n(${label}: ${Math.floor(fn(t)).toLocaleString('es')} en total)`);
+    }
+  }
+}
+
+/* ================= RANK RE-EVALUATION ================= */
+
+// Thresholds for grades D, C, B, A, S (below the first = E).
+const GRADES = {
+  push: [10, 20, 35, 50, 70],
+  squat: [20, 30, 40, 50, 60],
+  plank: [30, 60, 120, 180, 300],
+  burpee: [20, 35, 50, 65, 80],
+  run: [420, 360, 300, 255, 225],
+};
+const LETTERS = ['E', 'D', 'C', 'B', 'A', 'S'];
+const gradeOf = (id, v) => GRADES[id].filter((th) => (TESTS[id].lower ? v <= th : v >= th)).length;
+const gradeName = (g) => (S.theme === 'varka' ? RANKS_VARKA[g] : LETTERS[g]);
+
+function monthBests() {
+  const m = today().slice(0, 7), out = {};
+  for (const id of Object.keys(TESTS)) {
+    const l = (S.tests[id] || []).filter((x) => x.date.startsWith(m));
+    if (l.length) out[id] = TESTS[id].lower ? Math.min(...l.map((x) => x.v)) : Math.max(...l.map((x) => x.v));
+  }
+  return out;
+}
+
+function reevaluate() {
+  const m = today().slice(0, 7), bests = monthBests();
+  const ids = Object.keys(bests);
+  if (ids.length < 3 || (S.reeval && S.reeval.month === m)) return;
+  const grade = Math.round(ids.reduce((a, id) => a + gradeOf(id, bests[id]), 0) / ids.length);
+  S.reeval = { month: m, grade };
+  const xp = gainXP(200);
+  gainProto(100);
+  notify('Reevaluación', `[Reevaluación de rango]\n\n${ids.map((id) => `${TESTS[id].name}: ${fmtTest(id, bests[id])} → ${LETTERS[gradeOf(id, bests[id])]}`).join('\n')}\n\nTu rango por evaluación es:\n<b style="font-size:28px">${gradeName(grade)}</b>\n\nXP +${xp}`);
+  if (grade === 5) unlockTitle('srank');
+  save(); render();
+}
+
+function viewReeval() {
+  const m = today().slice(0, 7), bests = monthBests();
+  const n = Object.keys(bests).length, done = S.reeval && S.reeval.month === m;
+  return `<div class="win"><div class="win-title">Reevaluación de Rango</div>
+    <p class="muted" style="margin-top:0;font-size:14px">Una vez por mes, el Sistema mide tu rendimiento real con las pruebas de fuerza del mes (mínimo 3) y te asigna un rango por evaluación, independiente del nivel.</p>
+    ${Object.keys(TESTS).map((id) => `<div class="row" style="padding:3px 0"><span>${TESTS[id].name}</span>
+      <b>${bests[id] != null ? `${fmtTest(id, bests[id])} · ${LETTERS[gradeOf(id, bests[id])]}` : '<span class="muted">pendiente</span>'}</b></div>`).join('')}
+    ${S.reeval ? `<p class="center" style="margin:10px 0 0">Último rango por evaluación: <b class="gold">${gradeName(S.reeval.grade)}</b> <span class="muted">(${S.reeval.month})</span></p>` : ''}
+    ${done ? '<p class="center muted">Ya te reevaluaste este mes.</p>'
+      : `<button class="btn block" id="rankEval" ${n < 3 ? 'disabled' : ''}>${n < 3 ? `Faltan ${3 - n} prueba${3 - n === 1 ? '' : 's'} este mes` : 'Solicitar reevaluación'}</button>`}
+  </div>`;
+}
+
+/* ================= PROGRESS CHARTS ================= */
+
+const shortDate = (d) => `${+d.slice(8, 10)}/${+d.slice(5, 7)}`;
+
+function lineChart(pts, { fmtV, goal, lower } = {}) {
+  pts = [...pts].sort((p1, p2) => (p1.d < p2.d ? -1 : p1.d > p2.d ? 1 : 0));
+  if (pts.length < 2) return '<p class="muted center" style="font-size:14px">Necesitás al menos 2 registros para ver la evolución.</p>';
+  const W = 320, H = 140, L = 40, R = 12, T = 12, B = 24;
+  const xs = pts.map((p) => new Date(p.d + 'T12:00').getTime());
+  const vals = pts.map((p) => p.v).concat(goal != null ? [goal] : []);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const pad = (hi - lo) * 0.15 || 1; lo -= pad; hi += pad;
+  const x = (t) => L + ((t - xs[0]) / (xs[xs.length - 1] - xs[0] || 1)) * (W - L - R);
+  const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const ticks = [lo + pad, (lo + hi) / 2, hi - pad];
+  const f = fmtV || ((v) => String(Math.round(v * 10) / 10));
+  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img">
+    ${ticks.map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="grid"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" class="axis">${f(v)}</text>`).join('')}
+    ${goal != null ? `<line x1="${L}" x2="${W - R}" y1="${y(goal)}" y2="${y(goal)}" class="goal"/><text x="${W - R}" y="${y(goal) - 4}" text-anchor="end" class="axis">Meta ${f(goal)}</text>` : ''}
+    <polyline points="${pts.map((p, i) => `${x(xs[i])},${y(p.v)}`).join(' ')}" class="series"/>
+    ${pts.map((p, i) => `<circle cx="${x(xs[i])}" cy="${y(p.v)}" r="4" class="dot"/><circle cx="${x(xs[i])}" cy="${y(p.v)}" r="14" class="hit" data-tip="${shortDate(p.d)}: ${f(p.v)}"/>`).join('')}
+    <text x="${L}" y="${H - 6}" class="axis">${shortDate(pts[0].d)}</text>
+    <text x="${W - R}" y="${H - 6}" text-anchor="end" class="axis">${shortDate(pts[pts.length - 1].d)}</text>
+  </svg><div class="chart-tip muted">Tocá un punto para ver el valor${lower ? ' · más bajo es mejor' : ''}</div></div>`;
+}
+
+function weeklyChart() {
+  const weeks = [];
+  for (let i = 7; i >= 0; i--) { const d = new Date(); d.setDate(d.getDate() - i * 7); weeks.push(weekStart(d)); }
+  const data = weeks.map((w) => {
+    let daily = 0, rout = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(w + 'T12:00'); d.setDate(d.getDate() + i);
+      const L = (S.log || {})[today(d)];
+      if (L && L.daily) daily++;
+      if (L && L.routines) rout += L.routines.length;
+    }
+    return { w, daily, rout };
+  });
+  const W = 320, H = 140, L = 24, R = 8, T = 12, B = 24;
+  const max = Math.max(7, ...data.map((d) => d.rout));
+  const slot = (W - L - R) / data.length, bw = (slot - 10) / 2;
+  const y = (v) => T + (1 - v / max) * (H - T - B);
+  return `<div class="chart">
+    <div class="legend"><span><i style="background:var(--c1)"></i>Diarias</span><span><i style="background:var(--c2)"></i>Rutinas</span></div>
+    <svg viewBox="0 0 ${W} ${H}" role="img">
+    ${[0, Math.round(max / 2), max].map((v) => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="grid"/><text x="${L - 4}" y="${y(v) + 4}" text-anchor="end" class="axis">${v}</text>`).join('')}
+    ${data.map((d, i) => {
+      const x0 = L + i * slot + 4;
+      return `<rect x="${x0}" y="${y(d.daily)}" width="${bw}" height="${Math.max(0, y(0) - y(d.daily))}" rx="2" fill="var(--c1)"/>
+        <rect x="${x0 + bw + 2}" y="${y(d.rout)}" width="${bw}" height="${Math.max(0, y(0) - y(d.rout))}" rx="2" fill="var(--c2)"/>
+        <rect x="${x0 - 2}" y="${T}" width="${slot}" height="${H - T - B}" class="hit" data-tip="Semana del ${shortDate(d.w)}: ${d.daily} diarias · ${d.rout} rutinas"/>`;
+    }).join('')}
+    <text x="${L}" y="${H - 6}" class="axis">${shortDate(data[0].w)}</text>
+    <text x="${W - R}" y="${H - 6}" text-anchor="end" class="axis">Esta semana</text>
+  </svg><div class="chart-tip muted">Tocá una semana para ver el detalle</div></div>`;
+}
+
+function viewProgress() {
+  const t = totals();
+  const weights = S.weights.map((w) => ({ d: w.date, v: w.kg }));
+  const testCharts = Object.keys(TESTS).map((id) => {
+    const byDay = {};
+    for (const r of S.tests[id] || []) byDay[r.date] = byDay[r.date] == null ? r.v : TESTS[id].lower ? Math.min(byDay[r.date], r.v) : Math.max(byDay[r.date], r.v);
+    const pts = Object.entries(byDay).sort().map(([d, v]) => ({ d, v }));
+    if (pts.length < 2) return '';
+    return `<div class="label" style="margin-top:12px">${TESTS[id].name}</div>${lineChart(pts, { fmtV: (v) => fmtTest(id, Math.round(v)).replace(' reps', ''), lower: TESTS[id].lower })}`;
+  }).join('');
+  return `<div class="win"><div class="win-title">Progreso</div>
+    <div class="label">Constancia (últimas 8 semanas)</div>${weeklyChart()}
+    <div class="label" style="margin-top:12px">Peso (kg)</div>${lineChart(weights, { goal: S.profile ? +S.profile.answers.goalWeight : null })}
+    ${testCharts || '<p class="muted" style="font-size:14px;margin-top:12px">Hacé las pruebas de fuerza más de una vez para ver cómo mejoran tus récords.</p>'}
+    <hr><div class="label">Entrenamiento acumulado</div>
+    ${REAL_GAINS.map(([id, stat, label, fn, every]) => {
+      const v = fn(t), next = (Math.floor(v / every) + 1) * every;
+      return `<div class="row" style="padding:3px 0;font-size:15px"><span>${label}: <b>${(Math.round(v * 10) / 10).toLocaleString('es')}</b></span>
+        <span class="muted">${STATS[stat][1]} +1 en ${(Math.round((next - v) * 10) / 10).toLocaleString('es')}</span></div>`;
+    }).join('')}
+  </div>`;
+}
+
 /* ================= RENDER ================= */
 
 const $ = (s) => document.querySelector(s);
@@ -1698,7 +1892,7 @@ function finishEval() {
   const a = evalDraft.answers;
   const p = computePlan(a);
   const first = !S.profile;
-  S.profile = { answers: a, plan: p, reminderHour: { morning: 12, afternoon: 19, night: 21 }[a.when], start: +a.weight };
+  S.profile = { since: (S.profile && S.profile.since) || today(), answers: a, plan: p, reminderHour: { morning: 12, afternoon: 19, night: 21 }[a.when], start: +a.weight };
   S.targets = { ...p.targets };
   if (!S.weights.length || S.weights[S.weights.length - 1].kg !== +a.weight) S.weights.push({ date: today(), kg: +a.weight });
   if (first) {
@@ -1808,7 +2002,7 @@ function saveJournal(el, final) {
 function viewDay(d) {
   const isToday = d === today();
   const L = { ...((S.log || {})[d] || {}) };
-  if (isToday) { L.progress = S.daily.progress; L.targets = S.targets; L.daily = S.daily.claimed; L.timer = Math.round(timerSec()); }
+  if (isToday) { L.progress = S.daily.progress; L.targets = Object.fromEntries(Object.keys(S.targets).map((k) => [k, tgt(k)])); L.daily = S.daily.claimed; L.timer = Math.round(timerSec()); }
   const date = new Date(d + 'T12:00').toLocaleDateString('es', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, (c) => c.toUpperCase());
   const rows = [];
   if (L.daily) rows.push('✔ Misión diaria completada');
@@ -1860,6 +2054,7 @@ function viewStatus() {
         <div><span class="label">Clase:</span> ${S.job}</div>
         <div><span class="label">Título:</span> ${t}</div>
         <div><span class="label">Rango:</span> <span class="rank">${rank()}</span></div>
+        ${S.reeval ? `<div><span class="label">Evaluación:</span> <span class="rank">${gradeName(S.reeval.grade)}</span></div>` : ''}
       </div>
     </div>
     <hr>
@@ -1881,6 +2076,7 @@ function viewStatus() {
   </div>
   <button class="btn block" id="card" style="margin:-4px 0 16px">🪪 Tarjeta de cazador</button>
   ${viewCalendar()}
+  ${viewProgress()}
   ${viewProfile()}
   <div class="win"><div class="win-title">Habilidades</div>
     <p class="muted center" style="margin-top:0;font-size:14px">Ranuras equipadas: <b>${(S.equipped || []).length} / ${maxSlots()}</b>
@@ -1923,9 +2119,10 @@ function viewQuests() {
       <p class="muted" style="text-align:right;margin:0">— Varka, desde la expedición</p></div>`;
   }
   html += `<div class="win"><div class="win-title">Misión Diaria</div>
+    ${isDeload() ? '<p class="center gold" style="margin-top:0;font-size:15px">Semana de descarga: objetivos −30%</p>' : ''}
     <p class="center" style="margin-top:0">[Entrenamiento de fuerza]<br><b>Preparativos para volverse poderoso</b></p>
     ${Object.entries(EXERCISES).map(([k, e]) => {
-      const ok = p[k] >= S.targets[k];
+      const ok = p[k] >= tgt(k);
       return `<div class="goal ${ok ? 'done' : ''}">
         <span class="name">${exLabel(k)}</span>
         <span class="ctrls">
@@ -1933,7 +2130,7 @@ function viewQuests() {
           <button class="btn small" data-ex="${k}" data-n="${e.steps[0]}">+${e.steps[0]}</button>
           <button class="btn small" data-ex="${k}" data-n="${e.steps[1]}">+${e.steps[1]}</button>
         </span>
-        <span class="count">[${p[k]}/${S.targets[k]}${e.unit}]</span></div>`;
+        <span class="count">[${p[k]}/${tgt(k)}${e.unit}]</span></div>`;
     }).join('')}
     ${S.daily.claimed
       ? '<p class="center" style="color:var(--accent)">✔ Misión completada. Recompensas recibidas.</p>'
@@ -2059,6 +2256,7 @@ function viewMore() {
     ${S.themeUnlocked ? `<div class="row" style="margin-bottom:8px"><span>Tema</span>
       <select id="theme" style="width:auto"><option value="sl" ${S.theme === 'sl' ? 'selected' : ''}>Solo Leveling</option>
       <option value="varka" ${S.theme === 'varka' ? 'selected' : ''}>Caballeros de Favonius</option></select></div>` : ''}
+    <div class="row" style="margin-bottom:8px"><span>Semana de descarga cada 6</span><button class="btn small" id="deloadTgl">${S.deload !== false ? 'Sí' : 'No'}</button></div>
     <div class="row"><span>Sonido</span><button class="btn small" id="snd">${S.sound ? 'Sí' : 'No'}</button></div>
     <div class="row" style="margin-top:8px"><span>Recordatorio</span><button class="btn small" id="notif">Activar</button></div>
     <p class="muted" style="font-size:14px">Misiones diarias completadas: ${S.totalDaily} · Mazmorras: ${S.dungeons}</p>
@@ -2074,6 +2272,8 @@ function viewMore() {
 
 let secretTaps = [];
 document.addEventListener('click', (ev) => {
+  const tip = ev.target.closest('[data-tip]');
+  if (tip) { const box = tip.closest('.chart').querySelector('.chart-tip'); box.textContent = tip.dataset.tip; box.classList.remove('muted'); }
   if (ev.target.closest('[data-secret]') && !S.themeUnlocked) {
     const now = Date.now();
     secretTaps = secretTaps.filter((t) => now - t < 3000).concat(now);
@@ -2160,6 +2360,8 @@ document.addEventListener('click', (ev) => {
     case 'claim': return claimDaily();
     case 'survive': return clearPenalty();
     case 'emgDone': return completeEmergency();
+    case 'rankEval': return reevaluate();
+    case 'deloadTgl': S.deload = S.deload === false; save(); render(); return;
     case 'card': return showCard();
     case 'cardShare': return shareCard();
     case 'gSkip': return guideNext();
@@ -2270,9 +2472,11 @@ rollover();
 ensureEquipped();
 rollEvent();
 ensureBoss();
+ensureSince();
+checkDeloadNotice();
 render();
 setInterval(() => {
-  if (rollover()) { rollEvent(); ensureBoss(); render(); }
+  if (rollover()) { rollEvent(); ensureBoss(); checkDeloadNotice(); render(); }
   maybeRemind();
   const t = $('#timer');
   if (t) t.textContent = timeLeft();

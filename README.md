@@ -53,6 +53,10 @@ Las repeticiones y series se ajustan a tu nivel, la cantidad de ejercicios a tu 
 - **Entrenamiento guiado**: cada rutina se puede hacer paso a paso, con series, temporizador automático para ejercicios por tiempo y descansos que avanzan solos.
 - **Jefe semanal**: cada semana aparece un jefe con HP que baja con todo lo que hacés (diaria, rutinas, mazmorras, pruebas, diario…). Si lo vencés antes del domingo hay recompensa grande.
 - **Tarjeta de cazador**: genera una imagen con tu nivel, rango, estadísticas y récords para compartir.
+- **Progreso**: gráficos de constancia semanal, peso y récords de las pruebas.
+- **Estadísticas reales**: STR, VIT, AGI, INT y PER suben solas con el entrenamiento acumulado (cada 1.000 flexiones, 25 km, etc.).
+- **Reevaluación de rango** mensual según las pruebas de fuerza, independiente del nivel.
+- **Semana de descarga** automática cada 6 semanas: objetivos y rutinas −30% (se puede desactivar).
 - **Diario**: en el Calendario, cada día tiene una entrada de texto y un estado de ánimo. La de hoy da +15 XP y los días con entrada se marcan con ✎.
 - **Logros** con 4 o 5 niveles cada uno y recompensas, y **títulos con requisitos visibles** (salvo los secretos).
 
