@@ -261,6 +261,65 @@ function viewRoutines() {
   </div>`;
 }
 
+// Hidden theme: Knights of Favonius (Varka, Genshin Impact). Pure text/color reskin;
+// mechanics and saved progress are shared with the default System theme.
+const VARKA = [
+  ['la misión diaria', 'el entrenamiento de Favonius'],
+  ['La misión diaria', 'El entrenamiento de Favonius'],
+  ['Preparativos para volverse poderoso', 'Régimen del Gran Maestro Varka'],
+  ['[Entrenamiento de fuerza]', '[Orden de entrenamiento de Favonius]'],
+  ['Misión de Castigo: Sobrevivir', 'Castigo: Guardia en la muralla'],
+  ['Misión de Cambio de Clase', 'Prueba de Ascenso'],
+  ['Misiones Secundarias', 'Encargos del Gremio'],
+  ['Misión Secundaria', 'Encargo del Gremio'],
+  ['Misión Secreta', 'Hazaña Oculta'],
+  ['Misión Diaria', 'Entrenamiento de Favonius'],
+  ['misión diaria', 'entrenamiento de Favonius'],
+  ['Misiones', 'Encargos'],
+  ['Zona de Castigo', 'Guardia de Castigo'],
+  ['Llave de Mazmorra Instantánea', 'Llave de Dominio'],
+  ['Mazmorra Instantánea', 'Dominio'],
+  ['Mazmorras Instantáneas', 'Dominios'],
+  ['Mazmorra Despejada', 'Dominio Superado'],
+  ['Mazmorra despejada', 'Dominio superado'],
+  ['Mazmorra de rango', 'Dominio de rango'],
+  ['mazmorras', 'dominios'], ['mazmorra', 'dominio'], ['Mazmorra', 'Dominio'],
+  ['Castillo del Demonio', 'Templo del Lobo del Norte'],
+  ['Lycan de Colmillos de Acero', 'Mitachurl con escudo'],
+  ['Kasaka, la Serpiente Venenosa', 'Lawachurl de Piedra'],
+  ['Caballero Sangriento Igris', 'Heraldo del Abismo'],
+  ['Cerbero, Guardián del Castillo', 'Hipóstasis Anemo'],
+  ['Vulcan, Señor de los Demonios', 'Dvalin, el Dragón del Viento'],
+  ['Baran, el Rey Demonio', 'Andrius, Señor de los Lobos'],
+  ['Arsenal de Igris', 'Mandoble del Gran Maestro'],
+  ['Pasos del Lobo', 'Carrera de Boreas'],
+  ['Núcleo de Sombra', 'Postura del Caballero'],
+  ['Persecución de Kasaka', 'Patrulla del Bosque Susurrante'],
+  ['Marcha de la Legión', 'La Expedición de Varka'],
+  ['Fortaleza de Tank', 'Escudo de Favonius'],
+  ['Respiración del Monarca', 'Brisa de Mondstadt'],
+  ['>Despertar<', '>Recluta de Favonius<'],
+  ['Monarca de las Sombras', 'Gran Maestro de Favonius'],
+  ['Extracción de Sombras', 'Bendición del Viento del Oeste'],
+  ['¡LEVÁNTATE!', '¡POR MONDSTADT!'],
+  ['Ejército de sombras', 'Caballeros reclutados'],
+  ['se ha unido a tu ejército', 'se ha unido a la Orden'],
+  ['La sombra', 'El caballero'],
+  ['Nigromante', 'Capitán de Caballería'],
+  ['Caja Aleatoria', 'Cofre de Mondstadt'],
+  ['Jugador', 'Caballero'],
+  ['Notificación', 'Mensaje de la Orden'],
+  ['ADVERTENCIA', 'AVISO DE LA ORDEN'],
+  ['Sistema', 'Orden'],
+  ['Tienda', 'Mercado'],
+];
+
+function themed(html) {
+  if (S.theme !== 'varka') return html;
+  for (const [a, b] of VARKA) html = html.split(a).join(b);
+  return html.replace(/\b([Oo])ro\b/g, 'Mora');
+}
+
 const BLOCK_MODES = { none: 'Solo por honor', ios: 'iPhone (Atajos)', android: 'Android (Bienestar Digital)' };
 
 const QUESTIONS = [
@@ -346,6 +405,7 @@ function defaultState() {
     ],
     sound: true, history: [],
     profile: null, weights: [], routineLog: [], log: null,
+    theme: 'sl', themeUnlocked: false,
   };
 }
 
@@ -415,6 +475,7 @@ function nextNotice() {
   if (!n) { showing = false; o.hidden = true; o.innerHTML = ''; return; }
   showing = true;
   ding(n.danger);
+  n.title = themed(n.title); n.msg = themed(n.msg);
   o.innerHTML = `<div class="win" ${n.danger ? 'style="--line:var(--red);--glow:var(--red-glow)"' : ''}>
     <div class="win-title">${n.title}</div>
     <div class="msg">${n.msg}</div>
@@ -740,13 +801,18 @@ function tickTimers() {
 
 function render() {
   document.body.classList.toggle('penalty', !!S.penalty);
+  document.body.classList.toggle('varka', S.theme === 'varka');
+  document.querySelectorAll('#tabs button').forEach((b) => {
+    b.dataset.label = b.dataset.label || b.textContent;
+    b.textContent = themed(b.dataset.label);
+  });
   const app = $('#app');
   if (!S.awakened) { $('#tabs').hidden = true; app.innerHTML = viewAwaken(); bindAwaken(); return; }
-  if (!S.profile || evalDraft) { $('#tabs').hidden = true; app.innerHTML = viewEval(); return; }
+  if (!S.profile || evalDraft) { $('#tabs').hidden = true; app.innerHTML = themed(viewEval()); return; }
   $('#tabs').hidden = false;
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   decayFatigue();
-  app.innerHTML = { status: viewStatus, quests: viewQuests, routines: viewRoutines, inventory: viewInventory, shop: viewShop, more: viewMore }[tab]();
+  app.innerHTML = themed({ status: viewStatus, quests: viewQuests, routines: viewRoutines, inventory: viewInventory, shop: viewShop, more: viewMore }[tab]());
 }
 
 function viewAwaken() {
@@ -1132,7 +1198,10 @@ function viewMore() {
     <button class="btn block" id="sqAdd">Agregar</button>
     ${S.side.map((q) => `<div class="goal"><span class="name">${esc(q.name)}</span><button class="btn small danger" data-del="${q.id}">✕</button></div>`).join('')}
   </div>
-  <div class="win"><div class="win-title">Sistema</div>
+  <div class="win"><div class="win-title" data-secret>Sistema</div>
+    ${S.themeUnlocked ? `<div class="row" style="margin-bottom:8px"><span>Tema</span>
+      <select id="theme" style="width:auto"><option value="sl" ${S.theme === 'sl' ? 'selected' : ''}>Solo Leveling</option>
+      <option value="varka" ${S.theme === 'varka' ? 'selected' : ''}>Caballeros de Favonius</option></select></div>` : ''}
     <div class="row"><span>Sonido</span><button class="btn small" id="snd">${S.sound ? 'Sí' : 'No'}</button></div>
     <div class="row" style="margin-top:8px"><span>Recordatorio</span><button class="btn small" id="notif">Activar</button></div>
     <p class="muted" style="font-size:14px">Misiones diarias completadas: ${S.totalDaily} · Mazmorras: ${S.dungeons}</p>
@@ -1145,6 +1214,18 @@ function viewMore() {
 }
 
 /* ================= EVENTS ================= */
+
+let secretTaps = [];
+document.addEventListener('click', (ev) => {
+  if (ev.target.closest('[data-secret]') && !S.themeUnlocked) {
+    const now = Date.now();
+    secretTaps = secretTaps.filter((t) => now - t < 3000).concat(now);
+    if (secretTaps.length >= 7) {
+      S.themeUnlocked = true; save(); render();
+      notify('Notificación', '[Acceso desbloqueado]\n\nSe detectó una señal del viento del oeste...\n\nNuevo tema disponible:\n<b>Caballeros de Favonius</b>');
+    }
+  }
+});
 
 document.addEventListener('click', (ev) => {
   const b = ev.target.closest('button');
@@ -1233,6 +1314,11 @@ document.addEventListener('change', (ev) => {
   if (el.dataset.target) {
     const v = Math.max(el.dataset.target === 'run' ? 0.5 : 1, Number(el.value) || 0);
     S.targets[el.dataset.target] = v; save();
+  }
+  if (el.id === 'theme') {
+    S.theme = el.value; save(); render();
+    if (S.theme === 'varka') notify('Notificación', 'Bienvenido a los Caballeros de Favonius.\n\nEl Gran Maestro Varka sigue de expedición, pero dejó su régimen de entrenamiento para los caballeros de Mondstadt.\n\n¡Que el viento te acompañe!');
+    return;
   }
   if (el.id === 'bhours') { S.block.hours = Number(el.value); save(); }
   if (el.id === 'bapps') { S.block.apps = el.value.trim(); save(); }
