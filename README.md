@@ -57,6 +57,7 @@ Las repeticiones y series se ajustan a tu nivel, la cantidad de ejercicios a tu 
 - **Estadísticas reales**: STR, VIT, AGI, INT y PER suben solas con el entrenamiento acumulado (cada 1.000 flexiones, 25 km, etc.).
 - **Reevaluación de rango** mensual según las pruebas de fuerza, independiente del nivel.
 - **Semana de descarga** automática cada 6 semanas: objetivos y rutinas −30% (se puede desactivar).
+- **Régimen del Gran Maestro** (tema Favonius): tras 2 semanas de constancia y superar una prueba de un día, la diaria pasa a ×1,5 y las rutinas suman una serie, a cambio de +50% de XP, protogemas ×2, semana perfecta con premio y un mandoble exclusivo. Dos ausencias en una semana lo quitan.
 - **Diario**: en el Calendario, cada día tiene una entrada de texto y un estado de ánimo. La de hoy da +15 XP y los días con entrada se marcan con ✎.
 - **Logros** con 4 o 5 niveles cada uno y recompensas, y **títulos con requisitos visibles** (salvo los secretos).
 

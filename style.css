@@ -150,7 +150,7 @@ body.varka:not(.penalty) {
   --panel: rgba(10, 32, 34, 0.86); --muted: #8fb5ad;
   background: radial-gradient(ellipse at top, #123a36 0%, #06110f 62%) fixed;
 }
-body.varka:not(.penalty) .bar > i { background: linear-gradient(90deg, #1f8f7a, #a8f5e2); }
+body.varka:not(.penalty) .bar:not(.hp):not(.mp):not(.fat) > i { background: linear-gradient(90deg, #1f8f7a, #a8f5e2); }
 body.varka .win-title { font-family: Georgia, "Times New Roman", serif; letter-spacing: 2px; }
 textarea { font: inherit; color: var(--text); background: #0a1a30; border: 1px solid var(--line); border-radius: 4px;
   padding: 8px 10px; width: 100%; margin-top: 8px; resize: vertical; }
@@ -187,3 +187,8 @@ body.varka { --c1: #249a80; --c2: #b8862a; }
 .chart-tip { font-size: 13px; text-align: center; min-height: 1.3em; }
 .legend { display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+
+/* Grand Master regimen: Favonius gold over the Varka theme */
+body.varka.gm:not(.penalty) { --line: #e8c46a; --glow: rgba(232, 196, 106, 0.45); --accent: #fff1c9; }
+body.varka.gm:not(.penalty) .bar:not(.hp):not(.mp):not(.fat) > i { background: linear-gradient(90deg, #a77d1e, #fff1c9); }
+.gm-win { border-color: #e8c46a; box-shadow: 0 0 16px rgba(232, 196, 106, .45), inset 0 0 22px rgba(232, 196, 106, .12); }

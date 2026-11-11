@@ -56,6 +56,7 @@ const TITLES = {
   wall: { name: 'Muro Inamovible', desc: 'Prueba de fuerza: 3 minutos de plancha.', bonus: 'XP de pruebas de fuerza +25%' },
   engine: { name: 'Motor Incansable', desc: 'Prueba de fuerza: 60 burpees en 3 minutos.', bonus: 'XP de pruebas de fuerza +25%' },
   srank: { name: 'Cazador de Rango S', desc: 'Obtener rango S en una reevaluación.', bonus: 'Toda la XP +10%' },
+  gm: { name: 'Discípulo del Gran Maestro', desc: 'Superar la Prueba del Gran Maestro (tema Caballeros de Favonius).', bonus: 'Toda la XP +10%' },
   wind: { name: 'Pies de Viento', desc: 'Prueba de fuerza: 1 km en menos de 4:30.', bonus: 'XP de pruebas de fuerza +25%' },
   monarch: { name: 'Monarca de las Sombras', desc: 'Alcanzaste el nivel 100.', bonus: 'Toda la XP +25%' },
 };
@@ -315,9 +316,9 @@ function weekPlan() {
 function buildRoutine(id) {
   const R = ALL_ROUTINES()[id], a = S.profile.answers;
   const lvl = R.scale === 'run' ? +a.run : R.scale === 'str' ? +a.pushups : 1;
-  const f = (R.scale ? [0.6, 0.8, 1, 1.3][lvl] : 1) * (isDeload() && R.scale ? 0.7 : 1);
+  const f = (R.scale ? [0.6, 0.8, 1, 1.3][lvl] : 1) * (isDeload() && R.scale ? 0.7 : 1) * (gmOn() && R.scale ? 1.15 : 1);
   const count = Math.min(R.ex.length, { 15: 3, 30: 4, 45: 5, 60: 6 }[a.time]);
-  const sets = R.sets || [2, 3, 3, 4][lvl];
+  const sets = (R.sets || [2, 3, 3, 4][lvl]) + (gmOn() && R.scale && !R.sets ? 1 : 0);
   const ex = R.ex.slice(0, count).map(([n, amt, unit, avoid, sub]) => {
     const swap = avoid.includes(a.injury) && sub;
     const v = unit === 'sec' ? Math.max(15, Math.round((amt * f) / 5) * 5) : Math.max(4, Math.round(amt * f));
@@ -370,7 +371,7 @@ function viewRoutines() {
   const todayId = plan[ti];
   const rec = recommended();
   const a = S.profile.answers;
-  return `<div class="win"><div class="win-title">Plan Semanal</div>
+  return `${viewGM()}<div class="win"><div class="win-title">Plan Semanal</div>
     <p class="center muted" style="margin-top:0;font-size:15px">Objetivo: <b>${GOALS[a.goal]}</b> · ${TRAIN_DAYS[+a.activity].length} días de entrenamiento${a.injury !== 'none' ? ' · ejercicios adaptados a tu lesión' : ''}</p>
     ${plan.map((id, i) => `<div class="row" style="padding:5px 8px;${i === ti ? 'border:1px solid var(--line);border-radius:4px;box-shadow:0 0 8px var(--glow)' : ''}">
       <span class="label">${DAYS[i]}</span><span>${id ? ALL_ROUTINES()[id].name : '<span class="muted">Descanso</span>'}${id && routineDone(id) ? ' ✔' : ''}</span></div>`).join('')}
@@ -576,6 +577,7 @@ function defaultState() {
     equipped: null, event: null, eventDay: null, tests: {}, prs: 0, emergencies: 0, sideDone: 0, ach: {},
     journal: {},
     gear: { primos: 1600, pity5: 0, pity4: 0, inv: {}, eq: {} },
+    gm: { unlocked: false, active: false, trial: null, lastFail: null, misses: [], perfect: null },
   };
 }
 
@@ -596,6 +598,7 @@ function load() {
       st.tests = st.tests || {};
       st.journal = st.journal || {};
       st.gear = Object.assign(defaultState().gear, st.gear);
+      st.gm = Object.assign(defaultState().gm, st.gm);
       if (!st.log) {
         // Build the calendar from what older versions already stored.
         st.log = {};
@@ -644,7 +647,10 @@ const VARKA_LETTERS = [
   'El frío de estas tierras enseña algo simple: el que deja de moverse, pierde.',
   'Hoy un recluta me preguntó cuál es el secreto de la fuerza. Le respondí: repetirlo mañana.',
 ];
-const letterOfDay = () => VARKA_LETTERS[[...today()].reduce((h, c) => h + c.charCodeAt(0), 0) % VARKA_LETTERS.length];
+const letterOfDay = () => {
+  const list = gmOn() ? GM_LETTERS : VARKA_LETTERS;
+  return list[[...today()].reduce((h, c) => h + c.charCodeAt(0), 0) % list.length];
+};
 const skillUnlocked = (s) => (s.job ? S.job !== 'Ninguno' : S.level >= s.lv);
 const maxSlots = () => 3 + (S.level >= 25 ? 1 : 0) + (S.job !== 'Ninguno' ? 1 : 0);
 const hasSkill = (name) => SKILLS.some((s) => s.name === name && skillUnlocked(s) && (s.job || (S.equipped || []).includes(name)));
@@ -731,6 +737,8 @@ function gainXP(base, source) {
   if (titleIs('double')) mult += 0.15;
   if (titleIs('legend')) mult += 0.2;
   if (titleIs('srank')) mult += 0.1;
+  if (titleIs('gm')) mult += 0.1;
+  if (gmOn() && ['daily', 'routine', 'dungeon'].includes(source)) mult += 0.5;
   mult += gearBonus().xp;
   if (source === 'routine' && titleIs('disciplined')) mult += 0.25;
   if (source === 'emergency' && titleIs('responder')) mult += 0.5;
@@ -807,6 +815,8 @@ function claimDaily() {
   S.daily.claimed = true;
   dayLog().daily = true;
   gainProto(60);
+  dayLog().daily = true;
+  gmPerfectWeek();
   hitBoss('daily');
   S.totalDaily++;
   S.streak++;
@@ -863,6 +873,7 @@ function rollover() {
   }
   if (missed && S.awakened && S.daily.date) {
     S.streak = 0;
+    gmMissed();
     dayLog(t).penalty = true;
     S.penalty = { date: t, until: Date.now() + S.block.hours * 3.6e6, taskDone: false };
     const loss = Math.round(maxHP() * (titleIs('overcame') ? 0.25 : 0.5));
@@ -1433,6 +1444,7 @@ ART_SETS.forEach(([set, setName, r]) => Object.entries(GEAR_SLOTS).forEach(([slo
   if (slot !== 'weapon') GEAR[`a_${set}_${slot}`] = { slot, set, name: `${sl.name} del ${setName}`, r };
 }));
 const SET_NAME = Object.fromEntries(ART_SETS.map(([id, n]) => [id, n]));
+GEAR.w_granmaestro = { slot: 'weapon', name: 'Mandoble del Gran Maestro', r: 5, exclusive: true };
 
 // Deliberately tiny: a full 5★ build adds up to roughly +5% XP and a few % elsewhere.
 const gearValue = (g, refine) => ({ 3: 0.25, 4: 0.5, 5: 1 }[g.r] * (g.slot === 'weapon' ? 2 : 1) * (1 + 0.25 * (refine - 1))) / 100;
@@ -1467,6 +1479,7 @@ function combatPower() {
 let pendingProto = 0;
 function gainProto(n) {
   if (S.theme !== 'varka') return;
+  if (gmOn()) n *= 2;
   S.gear.primos += n;
   pendingProto += n;
 }
@@ -1484,7 +1497,7 @@ function wish(times) {
     else if (S.gear.pity4 >= 10 || roll < 0.15) r = 4;
     if (r === 5) S.gear.pity5 = 0;
     if (r >= 4) S.gear.pity4 = 0;
-    const pool = Object.keys(GEAR).filter((id) => GEAR[id].r === r);
+    const pool = Object.keys(GEAR).filter((id) => GEAR[id].r === r && !GEAR[id].exclusive);
     const id = pool[Math.floor(Math.random() * pool.length)];
     let note = '';
     if (owned(id) >= 5) { const back = { 3: 5, 4: 20, 5: 80 }[r]; S.gear.primos += back; note = ` (R5 máx · +${back} 💎)`; }
@@ -1552,8 +1565,9 @@ function weekIndex() {
 }
 const isDeload = () => S.deload !== false && !!S.profile && weekIndex() % 6 === 5;
 const tgt = (k) => {
-  if (!isDeload()) return S.targets[k];
-  return k === 'run' ? Math.max(0.5, Math.round(S.targets[k] * 0.7 * 2) / 2) : Math.max(5, Math.round((S.targets[k] * 0.7) / 5) * 5);
+  const m = (gmOn() ? 1.5 : 1) * (isDeload() ? 0.7 : 1);
+  if (m === 1) return S.targets[k];
+  return k === 'run' ? Math.max(0.5, Math.round(S.targets[k] * m * 2) / 2) : Math.max(5, Math.round((S.targets[k] * m) / 5) * 5);
 };
 
 function ensureSince() {
@@ -1733,6 +1747,148 @@ function viewProgress() {
   </div>`;
 }
 
+/* ================= GRAND MASTER REGIMEN (Varka sub-mode) ================= */
+
+const gmOn = () => S.theme === 'varka' && S.gm && S.gm.unlocked && S.gm.active;
+
+function lastDays(n) {
+  const out = [];
+  for (let i = 0; i < n; i++) { const d = new Date(); d.setDate(d.getDate() - i); out.push(today(d)); }
+  return out;
+}
+
+// Two weeks of consistency across most of the app.
+function gmReqs() {
+  const days = lastDays(14), L = (d) => (S.log || {})[d] || {};
+  const dailies = days.filter((d) => L(d).daily || (d === today() && S.daily.claimed)).length;
+  const routines = days.reduce((a, d) => a + (L(d).routines ? L(d).routines.length : 0), 0);
+  const journal = days.filter((d) => S.journal && S.journal[d] && S.journal[d].text).length;
+  const boss = days.some((d) => L(d).boss) ? 1 : 0;
+  return [
+    ['Entrenamientos de Favonius completos', dailies, 11],
+    ['Rutinas completadas', routines, 6],
+    ['Entradas de la bitácora', journal, 5],
+    ['Jefe semanal derrotado', boss, 1],
+  ];
+}
+const gmReady = () => gmReqs().every(([, have, need]) => have >= need) && !S.penalty;
+
+// [name, amount, unit, injuries, substitute [name, amount, unit]]
+const GM_TRIAL = [
+  ['Marcha con mochila cargada', 1800, 'sec', ['knee', 'back'], ['Caminata rápida sin carga', 2400, 'sec']],
+  ['Flexiones (en las series que necesites)', 100, 'rep', ['shoulder'], ['Puente de glúteo', 150, 'rep']],
+  ['Sentadillas', 150, 'rep', ['knee'], ['Puente de glúteo a una pierna (total)', 80, 'rep']],
+  ['Plancha acumulada', 300, 'sec', ['shoulder'], ['Dead bug lento (acumulado)', 300, 'sec']],
+  ['Burpees', 50, 'rep', ['knee', 'shoulder'], ['Boxeo de sombra', 600, 'sec']],
+];
+
+function buildTrial() {
+  const a = S.profile.answers, fac = [0.5, 0.7, 0.85, 1][+a.pushups];
+  return GM_TRIAL.map(([name, amt, unit, avoid, sub]) => {
+    const [n, v, u] = avoid.includes(a.injury) ? sub : [name, amt, unit];
+    const val = n.startsWith('Marcha') || n.startsWith('Caminata') ? v : u === 'sec' ? Math.round((v * fac) / 15) * 15 : Math.round((v * fac) / 5) * 5;
+    return { name: n, v: val, unit: u, done: false };
+  });
+}
+
+function gmCheckTrial() {
+  const tr = S.gm && S.gm.trial;
+  if (!tr || tr.date === today()) return;
+  S.gm.trial = null;
+  S.gm.lastFail = tr.date;
+  notify('Prueba del Gran Maestro', 'No completaste la prueba a tiempo.\n\n"La fuerza no se improvisa. Volvé a intentarlo cuando estés listo."\n\nPodés reintentarla en 3 días.', { danger: true });
+  save();
+}
+
+function gmStepDone(i) {
+  const tr = S.gm.trial;
+  if (!tr || tr.steps[i].done) return;
+  tr.steps[i].done = true;
+  if (tr.steps.every((x) => x.done)) {
+    S.gm.trial = null;
+    S.gm.unlocked = true;
+    S.gm.active = true;
+    S.gm.misses = [];
+    S.gear.inv.w_granmaestro = Math.max(1, S.gear.inv.w_granmaestro || 0);
+    S.gear.primos += 1600;
+    const xp = gainXP(500);
+    unlockTitle('gm');
+    notify('Prueba del Gran Maestro', `Has superado la Prueba del Gran Maestro.\n\n"Bienvenido a mi régimen. Desde hoy entrenás como yo."\n— Varka\n\nRecompensas:\n• XP +${xp}\n• 💎 Protogemas +1600\n• ★★★★★ <b>Mandoble del Gran Maestro</b> (exclusivo)\n\nEl Régimen del Gran Maestro está activo.`);
+  }
+  save(); render();
+}
+
+function gmMissed() {
+  if (!gmOn()) return;
+  const wk = weekStart();
+  S.gm.misses = (S.gm.misses || []).filter((d) => weekStart(new Date(d + 'T12:00')) === wk).concat(today());
+  if (S.gm.misses.length >= 2) {
+    S.gm.unlocked = false; S.gm.active = false; S.gm.misses = [];
+    notify('Régimen del Gran Maestro', '"Dos ausencias en una semana. Un caballero de mi régimen no falta."\n— Varka\n\nPerdiste el acceso al Régimen del Gran Maestro. Volvé a cumplir los requisitos y superar la prueba para recuperarlo.\nTu título y tu mandoble se quedan con vos.', { danger: true });
+  } else {
+    notify('Régimen del Gran Maestro', 'Faltaste a un entrenamiento.\n\nUna ausencia más esta semana y perdés el régimen.', { danger: true });
+  }
+}
+
+function gmPerfectWeek() {
+  if (!gmOn() || S.gm.perfect === weekStart()) return;
+  const start = new Date(weekStart() + 'T12:00');
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start); d.setDate(d.getDate() + i);
+    const k = today(d);
+    if (!((S.log || {})[k] || {}).daily) return;
+  }
+  S.gm.perfect = weekStart();
+  S.ap += 1;
+  S.gear.primos += 320;
+  notify('Régimen del Gran Maestro', '[Semana perfecta]\n\n7 de 7 entrenamientos bajo el régimen del Gran Maestro.\n\nRecompensas:\n• Sello del Gran Maestro: +1 punto de habilidad\n• 💎 Protogemas +320');
+}
+
+const GM_LETTERS = [
+  'Ahora entrenás como yo. Eso significa que no hay días fáciles, solo días hechos.',
+  'Mi régimen no es para todos. Lo sé porque te vi llegar hasta acá.',
+  'Cuando la expedición encuentra una montaña, no busca rodearla.',
+  'Un Gran Maestro no exige a sus caballeros nada que no se exija primero a sí mismo.',
+  'El cansancio de hoy es la fuerza de la próxima expedición.',
+  'Dos semanas de constancia te trajeron hasta acá. Ahora sostenelo.',
+];
+
+function viewGM() {
+  if (S.theme !== 'varka') return '';
+  const g = S.gm;
+  if (g.unlocked) {
+    return `<div class="win gm-win"><div class="win-title">Régimen del Gran Maestro</div>
+      <p class="center" style="margin-top:0">${g.active ? '<b class="gold">ACTIVO</b>' : '<span class="muted">En pausa</span>'}</p>
+      <ul style="font-size:14px;padding-left:18px;margin:6px 0">
+        <li>Entrenamiento diario <b>×1,5</b> · rutinas con <b>+1 serie</b> y más carga</li>
+        <li>XP de entrenamiento, rutinas y dominios <b>+50%</b> · protogemas <b>×2</b></li>
+        <li>Semana perfecta (7/7): +1 punto de habilidad y 320 💎</li>
+        <li>Dos ausencias en la misma semana y perdés el régimen</li>
+      </ul>
+      ${g.active ? `<p class="center muted" style="font-size:13px">Ausencias esta semana: ${(g.misses || []).filter((d) => weekStart(new Date(d + 'T12:00')) === weekStart()).length} / 2</p>` : ''}
+      <button class="btn block" id="gmToggle">${g.active ? 'Pausar régimen' : 'Reanudar régimen'}</button>
+    </div>`;
+  }
+  if (g.trial) {
+    return `<div class="win gm-win"><div class="win-title">Prueba del Gran Maestro</div>
+      <p class="center" style="margin-top:0;font-size:15px">Completá todo <b>hoy</b>. Podés hacerlo en partes a lo largo del día.</p>
+      ${g.trial.steps.map((st, i) => `<div class="goal ${st.done ? 'done' : ''}"><span class="name">${st.unit === 'sec' ? `${st.name}: ${fmtMin(st.v)}` : `${st.v} × ${st.name}`}</span>
+        ${st.done ? '<span class="check">✔</span>' : `${st.unit === 'sec' ? `<button class="btn small" data-rest="${st.v}" data-label="${esc(st.name)}">⏱</button>` : ''}<button class="btn small" data-gmstep="${i}">Hecho</button>`}</div>`).join('')}
+      <p class="center timer rest-view" style="min-height:1.2em"></p>
+    </div>`;
+  }
+  const reqs = gmReqs(), ready = gmReady();
+  const cooldown = g.lastFail && (Date.now() - new Date(g.lastFail + 'T12:00')) < 3 * 864e5;
+  return `<div class="win gm-win"><div class="win-title">Régimen del Gran Maestro</div>
+    <p style="margin-top:0;font-size:15px;font-style:italic">"Si querés entrenar como yo, primero demostrá que podés sostenerlo." — Varka</p>
+    <div class="label">Requisitos (últimos 14 días)</div>
+    ${reqs.map(([label, have, need]) => `<div class="row" style="padding:3px 0"><span>${have >= need ? '✔' : '◻'} ${label}</span><b>${Math.min(have, need)} / ${need}</b></div>${bar('', Math.min(have, need), need)}`).join('')}
+    ${S.penalty ? '<p class="red center" style="font-size:14px">No podés intentarlo mientras estés castigado.</p>' : ''}
+    <button class="btn block" id="gmTrial" ${ready && !cooldown ? '' : 'disabled'}>${cooldown ? 'Podés reintentar en unos días' : ready ? 'Aceptar la Prueba del Gran Maestro' : 'Requisitos incompletos'}</button>
+    <p class="muted" style="font-size:13px">La prueba dura un día: marcha con carga, flexiones, sentadillas, plancha y burpees, ajustados a tu nivel y lesiones.</p>
+  </div>`;
+}
+
 /* ================= RENDER ================= */
 
 const $ = (s) => document.querySelector(s);
@@ -1797,6 +1953,7 @@ function tickTimers() {
 function render() {
   document.body.classList.toggle('penalty', !!S.penalty);
   document.body.classList.toggle('varka', S.theme === 'varka');
+  document.body.classList.toggle('gm', gmOn());
   const rootBg = S.penalty ? '#120205' : S.theme === 'varka' ? '#06110f' : '#050a14';
   document.documentElement.style.backgroundColor = rootBg;
   const meta = document.querySelector('meta[name=theme-color]');
@@ -2119,6 +2276,7 @@ function viewQuests() {
       <p class="muted" style="text-align:right;margin:0">— Varka, desde la expedición</p></div>`;
   }
   html += `<div class="win"><div class="win-title">Misión Diaria</div>
+    ${gmOn() ? '<p class="center gold" style="margin-top:0;font-size:15px">⚜ Régimen del Gran Maestro: objetivos ×1,5</p>' : ''}
     ${isDeload() ? '<p class="center gold" style="margin-top:0;font-size:15px">Semana de descarga: objetivos −30%</p>' : ''}
     <p class="center" style="margin-top:0">[Entrenamiento de fuerza]<br><b>Preparativos para volverse poderoso</b></p>
     ${Object.entries(EXERCISES).map(([k, e]) => {
@@ -2311,6 +2469,7 @@ document.addEventListener('click', (ev) => {
   if (d.rest) { rest = { end: Date.now() + d.rest * 1000, label: d.label }; tickTimers(); return; }
   if (d.routine) return completeRoutine(d.routine);
   if (d.guide) return startGuide(d.guide);
+  if (d.gmstep) return gmStepDone(Number(d.gmstep));
   if (d.gslot) { gearSlot = d.gslot; render(); return; }
   if (d.gequip) {
     const sl = GEAR[d.gequip].slot;
@@ -2360,6 +2519,12 @@ document.addEventListener('click', (ev) => {
     case 'claim': return claimDaily();
     case 'survive': return clearPenalty();
     case 'emgDone': return completeEmergency();
+    case 'gmTrial':
+      if (!gmReady()) return;
+      S.gm.trial = { date: today(), steps: buildTrial() };
+      notify('Prueba del Gran Maestro', '"Muy bien. Mostrame de qué estás hecho."\n— Varka\n\nTenés hasta la medianoche para completar la prueba.');
+      save(); render(); return;
+    case 'gmToggle': S.gm.active = !S.gm.active; save(); render(); return;
     case 'rankEval': return reevaluate();
     case 'deloadTgl': S.deload = S.deload === false; save(); render(); return;
     case 'card': return showCard();
@@ -2474,9 +2639,10 @@ rollEvent();
 ensureBoss();
 ensureSince();
 checkDeloadNotice();
+gmCheckTrial();
 render();
 setInterval(() => {
-  if (rollover()) { rollEvent(); ensureBoss(); checkDeloadNotice(); render(); }
+  if (rollover()) { rollEvent(); ensureBoss(); checkDeloadNotice(); gmCheckTrial(); render(); }
   maybeRemind();
   const t = $('#timer');
   if (t) t.textContent = timeLeft();
