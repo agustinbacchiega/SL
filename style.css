@@ -195,3 +195,6 @@ body.varka.gm:not(.penalty) .bar > i { background: linear-gradient(90deg, #a77d1
 
 body { overflow-x: hidden; }
 #app { will-change: transform; }
+#peek { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 5; will-change: transform; }
+#peek .peek-inner { max-width: 560px; margin: 0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px 0; }
+#peek[hidden] { display: none !important; }

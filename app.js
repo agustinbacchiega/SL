@@ -2655,17 +2655,45 @@ function maybeRemind() {
 
 /* ================= SWIPE BETWEEN TABS ================= */
 
-// The page follows the finger; on release it either slides to the neighbour tab
-// or springs back. Any drag also swallows the click that would otherwise hit a button.
+// The page follows the finger while the neighbour tab slides in beside it (a
+// read-only preview in #peek). On release it either completes or springs back.
+// Any drag also swallows the click that would otherwise hit a button.
 let swipe = null;
 let suppressClickUntil = 0;
 
 const visibleTabs = () => [...document.querySelectorAll('#tabs button')].filter((b) => !b.hidden).map((b) => b.dataset.tab);
+const TAB_VIEWS = () => ({ status: viewStatus, quests: viewQuests, routines: viewRoutines, inventory: viewInventory, shop: viewShop, more: viewMore, gear: viewGear });
 
-function slideApp(x, ms) {
-  const app = $('#app');
-  app.style.transition = ms ? `transform ${ms}ms cubic-bezier(.2,.7,.3,1)` : 'none';
+function peekEl() {
+  let el = document.getElementById('peek');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'peek';
+    el.innerHTML = '<div class="peek-inner"></div>';
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+function setPeek(name) {
+  const el = peekEl();
+  if (el.dataset.tab === name) return;
+  el.dataset.tab = name || '';
+  el.firstChild.innerHTML = name ? themed(TAB_VIEWS()[name]()) : '';
+  el.hidden = !name;
+}
+
+function place(x, peekX, ms) {
+  const tr = ms ? `transform ${ms}ms cubic-bezier(.2,.7,.3,1)` : 'none';
+  const app = $('#app'), pk = peekEl();
+  app.style.transition = tr; pk.style.transition = tr;
   app.style.transform = x ? `translate3d(${x}px,0,0)` : '';
+  pk.style.transform = `translate3d(${peekX}px,0,0)`;
+}
+
+function resetSwipeView() {
+  place(0, 0, 0);
+  setPeek(null);
 }
 
 document.addEventListener('touchstart', (ev) => {
@@ -2685,10 +2713,12 @@ document.addEventListener('touchmove', (ev) => {
   }
   if (swipe.axis !== 'x') return;
   ev.preventDefault(); // keep the page from scrolling vertically mid-swipe
-  const tabs = visibleTabs(), i = tabs.indexOf(tab);
-  const edge = (dx > 0 && i === 0) || (dx < 0 && i === tabs.length - 1);
+  const W = window.innerWidth, tabs = visibleTabs(), i = tabs.indexOf(tab);
+  const next = tabs[i + (dx < 0 ? 1 : -1)];
   swipe.dx = dx;
-  slideApp(edge ? dx * 0.25 : dx, 0);
+  if (!next) { setPeek(null); place(dx * 0.25, 0, 0); return; } // rubber band at the ends
+  setPeek(next);
+  place(dx, dx + (dx < 0 ? W : -W), 0);
 }, { passive: false });
 
 document.addEventListener('touchend', () => {
@@ -2700,19 +2730,21 @@ document.addEventListener('touchend', () => {
   const W = window.innerWidth, v = Math.abs(sw.dx) / Math.max(1, Date.now() - sw.at);
   const tabs = visibleTabs(), i = tabs.indexOf(tab) + (sw.dx < 0 ? 1 : -1);
   const far = Math.abs(sw.dx) >= W * 0.25, flick = v >= 0.5 && Math.abs(sw.dx) >= 60;
-  if (i < 0 || i >= tabs.length || !(far || flick)) { slideApp(0, 220); return; }
-  const dir = sw.dx < 0 ? -1 : 1;
-  slideApp(dir * W, 160);
+  const back = sw.dx < 0 ? W : -W;
+  if (i < 0 || i >= tabs.length || !(far || flick)) {
+    place(0, back, 220);
+    setTimeout(() => { if (!swipe) setPeek(null); }, 230);
+    return;
+  }
+  place(-back, 0, 200);
   setTimeout(() => {
     tab = tabs[i];
     render(); window.scrollTo(0, 0);
-    slideApp(-dir * W * 0.35, 0);
-    $('#app').getBoundingClientRect(); // commit the start position before animating in
-    slideApp(0, 220);
-  }, 160);
+    resetSwipeView();
+  }, 200);
 });
 
-document.addEventListener('touchcancel', () => { if (swipe && swipe.axis === 'x') slideApp(0, 220); swipe = null; });
+document.addEventListener('touchcancel', () => { if (swipe && swipe.axis === 'x') { place(0, swipe.dx < 0 ? window.innerWidth : -window.innerWidth, 220); setTimeout(() => setPeek(null), 230); } swipe = null; });
 
 // Capture phase: runs before the app's own click handlers.
 document.addEventListener('click', (ev) => {
