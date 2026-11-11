@@ -1980,6 +1980,13 @@ function render() {
   document.documentElement.style.backgroundColor = rootBg;
   const meta = document.querySelector('meta[name=theme-color]');
   if (meta) meta.setAttribute('content', rootBg);
+  // Point icons/manifest at the active theme. The browser tab updates at once; the
+  // home-screen icon is fixed at install time, so it changes on the next install.
+  const v = S.theme === 'varka';
+  const setHref = (sel, href) => { const l = document.querySelector(sel); if (l && l.getAttribute('href') !== href) l.setAttribute('href', href); };
+  setHref('link[rel=manifest]', v ? 'manifest-varka.webmanifest' : 'manifest.webmanifest');
+  setHref('link[rel=icon]', v ? 'icons/icon-varka.svg' : 'icons/icon.svg');
+  setHref('link[rel=apple-touch-icon]', v ? 'icons/icon-varka-192.png' : 'icons/icon-192.png');
   if (tab === 'gear' && S.theme !== 'varka') tab = 'status';
   $('#tabs').classList.toggle('seven', S.theme === 'varka');
   document.querySelectorAll('#tabs button').forEach((b) => {
