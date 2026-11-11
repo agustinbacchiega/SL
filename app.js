@@ -33,6 +33,10 @@ const ITEMS = {
   stone: { ico: '💠', name: 'Piedra Rúnica: Bonus', desc: 'Otorga 1 punto de habilidad.', price: 1500 },
 };
 
+const ITEM_ICO_VARKA = { box: '🎁', hp: '🍗', mp: '🍎', fat: '🍵', key: '🗝️', stone: '📜' };
+const itemIco = (id) => (S.theme === 'varka' && ITEM_ICO_VARKA[id]) || ITEMS[id].ico;
+const coin = () => (S.theme === 'varka' ? '🪙' : 'G');
+
 const TITLES = {
   overcame: { name: 'El que Superó la Adversidad', desc: 'Sobreviviste a la Zona de Castigo.', bonus: 'HP perdido en castigos -50%' },
   wolf: { name: 'Cazador de Lobos', desc: 'Despejaste 3 mazmorras instantáneas.', bonus: 'XP de mazmorras +40%' },
@@ -422,6 +426,7 @@ const VARKA = [
   ['Mazmorra Despejada', 'Dominio Superado'],
   ['Mazmorra despejada', 'Dominio superado'],
   ['Mazmorra de rango', 'Dominio de rango'],
+  ['una mazmorra', 'un dominio'], ['la mazmorra', 'el dominio'], ['La mazmorra', 'El dominio'],
   ['mazmorras', 'dominios'], ['mazmorra', 'dominio'], ['Mazmorra', 'Dominio'],
   ['Castillo del Demonio', 'Templo del Lobo del Norte'],
   ['Dominio de rango E', 'Dominio del Bosque Susurrante'],
@@ -906,7 +911,7 @@ function useItem(id) {
       notify('Caja Aleatoria', `Has obtenido:\n<span class="gold">${g} de oro</span>`);
     } else {
       addItem(r);
-      notify('Caja Aleatoria', `Has obtenido:\n${ITEMS[r].ico} <b>[${ITEMS[r].name}]</b>`);
+      notify('Caja Aleatoria', `Has obtenido:\n${itemIco(r)} <b>[${ITEMS[r].name}]</b>`);
     }
   } else if (id === 'hp') { S.hp = maxHP(); notify('Notificación', 'HP restaurado por completo.'); }
   else if (id === 'mp') { S.mp = maxMP(); notify('Notificación', 'MP restaurado por completo.'); }
@@ -995,7 +1000,7 @@ function rollEvent() {
     notify('Misión de Emergencia', `[Misión de Emergencia]\n\n<b>${ev.task}</b>\n\nTiempo límite: 2 horas\nRecompensa: XP +120 · Caja Aleatoria`, { danger: true });
   } else if (type === 'merchant') {
     ev.item = pick(['hp', 'mp', 'fat', 'key', 'box', 'stone']);
-    notify('Evento', `Un comerciante ambulante apareció.\n\nHoy: ${ITEMS[ev.item].ico} <b>${ITEMS[ev.item].name}</b> a mitad de precio en la Tienda.`);
+    notify('Evento', `Un comerciante ambulante apareció.\n\nHoy: ${itemIco(ev.item)} <b>${ITEMS[ev.item].name}</b> a mitad de precio en la Tienda.`);
   } else if (type === 'gate') {
     addItem('key'); ev.done = true;
     notify('Evento', 'Una puerta apareció cerca de vos.\n\nHas obtenido:\n🗝️ <b>[Llave de Mazmorra Instantánea]</b>');
@@ -1598,6 +1603,10 @@ function tickTimers() {
 function render() {
   document.body.classList.toggle('penalty', !!S.penalty);
   document.body.classList.toggle('varka', S.theme === 'varka');
+  const rootBg = S.penalty ? '#120205' : S.theme === 'varka' ? '#06110f' : '#050a14';
+  document.documentElement.style.backgroundColor = rootBg;
+  const meta = document.querySelector('meta[name=theme-color]');
+  if (meta) meta.setAttribute('content', rootBg);
   if (tab === 'gear' && S.theme !== 'varka') tab = 'status';
   $('#tabs').classList.toggle('seven', S.theme === 'varka');
   document.querySelectorAll('#tabs button').forEach((b) => {
@@ -1988,7 +1997,7 @@ function viewQuests() {
 function viewInventory() {
   const owned = Object.entries(S.inventory).filter(([, n]) => n > 0);
   return `<div class="win"><div class="win-title">Inventario</div>
-    ${owned.length ? owned.map(([id, n]) => `<div class="item"><div class="ico">${ITEMS[id].ico}</div>
+    ${owned.length ? owned.map(([id, n]) => `<div class="item"><div class="ico">${itemIco(id)}</div>
       <div class="info"><b>${ITEMS[id].name}</b> ×${n}<div class="desc">${ITEMS[id].desc}</div></div>
       <button class="btn small" data-use="${id}">${id === 'box' ? 'Abrir' : 'Usar'}</button></div>`).join('')
       : '<p class="muted center">Vacío.</p>'}
@@ -2008,9 +2017,9 @@ function viewInventory() {
 function viewShop() {
   return `<div class="win"><div class="win-title">Tienda</div>
     <div class="row" style="margin-bottom:8px"><span class="label">Oro disponible</span><b class="gold">${S.gold.toLocaleString('es')}</b></div>
-    ${Object.entries(ITEMS).map(([id, it]) => `<div class="item"><div class="ico">${it.ico}</div>
+    ${Object.entries(ITEMS).map(([id, it]) => `<div class="item"><div class="ico">${itemIco(id)}</div>
       <div class="info"><b>${it.name}</b><div class="desc">${it.desc}</div></div>
-      <button class="btn small" data-buy="${id}" ${S.gold < priceOf(id) ? 'disabled' : ''}>${priceOf(id) < it.price ? `<s style="opacity:.6">${it.price}</s> ` : ''}${priceOf(id)} G</button></div>`).join('')}
+      <button class="btn small" data-buy="${id}" ${S.gold < priceOf(id) ? 'disabled' : ''}>${priceOf(id) < it.price ? `<s style="opacity:.6">${it.price}</s> ` : ''}${priceOf(id)} ${coin()}</button></div>`).join('')}
   </div>`;
 }
 
@@ -2096,7 +2105,7 @@ document.addEventListener('click', (ev) => {
     if (S.gold < pr) return;
     if (S.event && S.event.type === 'merchant' && S.event.item === d.buy && S.event.date === today()) S.event.done = true;
     S.gold -= pr; addItem(d.buy); save(); render();
-    notify('Tienda', `Has comprado:\n${it.ico} <b>[${it.name}]</b>`); return;
+    notify('Tienda', `Has comprado:\n${itemIco(d.buy)} <b>[${it.name}]</b>`); return;
   }
   if (d.ans) { evalDraft.answers[QUESTIONS[evalDraft.step].id] = d.ans; evalDraft.step++; render(); return; }
   if (d.rest) { rest = { end: Date.now() + d.rest * 1000, label: d.label }; tickTimers(); return; }
