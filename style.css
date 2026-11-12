@@ -199,3 +199,5 @@ body { overflow-x: hidden; }
 #peek .peek-inner { max-width: 560px; margin: 0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px 0; }
 #peek[hidden] { display: none !important; }
 .cal-d.paused { background: rgba(127, 163, 192, .18); border-color: var(--muted); }
+.boss-win { padding: 10px 14px; }
+.boss-win .bar { margin: 4px 0 2px; }

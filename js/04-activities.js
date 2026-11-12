@@ -243,13 +243,15 @@ function viewBoss() {
   if (!b) return '';
   const end = new Date(b.week + 'T00:00'); end.setDate(end.getDate() + 7);
   const days = Math.ceil((end - Date.now()) / 864e5);
-  return `<div class="win"><div class="win-title">Jefe Semanal</div>
-    <p class="center" style="margin-top:0"><b class="red">${bossName()}</b></p>
-    ${b.defeated ? '<p class="center" style="color:var(--accent)">✔ Derrotado esta semana</p>'
-      : `<div class="row label"><span>HP</span><span>${b.hp} / ${b.max}</span></div>${bar('hp', b.hp, b.max)}
-      <p class="muted" style="font-size:13px;margin:4px 0">Todo lo que hacés le hace daño: diaria ${BOSS_DMG.daily} · rutina ${BOSS_DMG.routine} · mazmorra ${BOSS_DMG.dungeon} · secreta ${BOSS_DMG.secret} · emergencia ${BOSS_DMG.emergency} · prueba ${BOSS_DMG.test} · secundaria ${BOSS_DMG.side} · diario ${BOSS_DMG.journal}.<br>
-      Quedan ${days} día${days === 1 ? '' : 's'}. Recompensa: 300 XP, 300 de oro, Caja y Llave.</p>`}
-    ${b.hits.length ? `<div class="muted" style="font-size:13px">Últimos golpes: ${b.hits.map((h) => `${HIT_LABEL[h.kind]} −${h.dmg}`).join(' · ')}</div>` : ''}
+  return `<div class="win boss-win">
+    <div class="row"><span class="label">Jefe semanal</span><span class="muted" style="font-size:13px">${b.defeated ? '✔ Derrotado' : `${days} día${days === 1 ? '' : 's'}`}</span></div>
+    <div class="row" style="margin-top:2px"><b class="red" style="font-size:15px">${bossName()}</b>${b.defeated ? '' : `<span class="muted" style="font-size:13px">${b.hp} / ${b.max}</span>`}</div>
+    ${b.defeated ? '' : bar('hp', b.hp, b.max)}
+    <details><summary class="muted" style="font-size:13px">Daño y recompensa</summary>
+      <p class="muted" style="font-size:13px;margin:4px 0">Diaria ${BOSS_DMG.daily} · rutina ${BOSS_DMG.routine} · mazmorra ${BOSS_DMG.dungeon} · secreta ${BOSS_DMG.secret} · emergencia ${BOSS_DMG.emergency} · prueba ${BOSS_DMG.test} · secundaria ${BOSS_DMG.side} · diario ${BOSS_DMG.journal}.<br>
+      Recompensa: 300 XP, 300 de oro, Caja y Llave.</p>
+      ${b.hits.length ? `<div class="muted" style="font-size:13px">Últimos golpes: ${b.hits.map((h) => `${HIT_LABEL[h.kind] || h.kind} −${h.dmg}`).join(' · ')}</div>` : ''}
+    </details>
   </div>`;
 }
 

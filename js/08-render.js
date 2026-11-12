@@ -388,14 +388,10 @@ function viewQuests() {
       ${hasSkill('Sigilo') ? `<button class="btn block" id="stealth" ${S.mp < 100 || (S.stealthUsed && Date.now() - S.stealthUsed < 7 * 864e5) ? 'disabled' : ''}>Usar [Sigilo] (100 MP, 1/semana)</button>` : ''}
     </div>`;
   }
-  html += viewBoss();
-  html += viewEvent();
   if (S.theme === 'varka') {
     html += `<div class="win"><div class="win-title">Carta del Gran Maestro</div>
       <p style="font-style:italic;margin-top:0">"${letterOfDay()}"</p>
       <p class="muted" style="text-align:right;margin:0">— Varka, desde la expedición</p></div>`;
-    html += viewCommissions();
-    html += viewWeeklyRequest();
   }
   html += `<div class="win"><div class="win-title">Misión Diaria</div>
     ${pausedOn(today()) ? '<p class="center" style="margin-top:0;font-size:15px;color:var(--accent)">⏸ Modo pausa: hoy no hay castigo</p>' : ''}
@@ -461,6 +457,10 @@ function viewQuests() {
         ${d.done ? '<p class="center" style="color:var(--accent)">✔ Mazmorra despejada</p>' : ''}</div>`;
     }
   }
+  html += viewEvent();
+  html += viewBoss();
+  html += viewCommissions();
+  html += viewWeeklyRequest();
   html += `<div class="win"><div class="win-title">Misiones Secundarias</div>
     ${S.side.length ? '' : '<p class="muted center">Sin misiones. Agregalas en Sistema.</p>'}
     ${S.side.map((q) => `<div class="goal ${q.done === today() ? 'done' : ''}">
