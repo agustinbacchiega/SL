@@ -368,13 +368,6 @@ async function makeCard() {
   x.fillText(S.name, W / 2, 270);
   x.font = F(40); x.fillStyle = muted;
   x.fillText(themed(`${S.job === 'Ninguno' ? 'Sin clase' : S.job} · ${S.title ? TITLES[S.title].name : 'Sin título'}`), W / 2, 330);
-  // avatar (between level and rank)
-  try {
-    const img = new Image();
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(avatarSVG(rankIndex(), 200));
-    await img.decode();
-    x.drawImage(img, W / 2 - 100, 380, 200, 233);
-  } catch (e) { /* card still works without the avatar */ }
   // level + rank
   x.fillStyle = text; x.font = F(180, 700);
   x.fillText(String(S.level), W / 2 - 200, 560);

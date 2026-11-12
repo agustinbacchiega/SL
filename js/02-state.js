@@ -32,7 +32,7 @@ function defaultState() {
     equipped: null, event: null, eventDay: null, tests: {}, prs: 0, emergencies: 0, sideDone: 0, ach: {},
     journal: {},
     gear: { primos: 1600, pity5: 0, pity4: 0, inv: {}, eq: {} },
-    pause: null, pauseDays: [], comm: null, season: null, seasonWins: 0,
+    pause: null, pauseDays: [], comm: null, season: null, seasonWins: 0, wreq: null, wreqDone: 0, friends: {},
     gm: { unlocked: false, active: false, trial: null, lastFail: null, misses: [], perfect: null },
   };
 }

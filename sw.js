@@ -1,4 +1,4 @@
-const CACHE = 'sistema-v22';
+const CACHE = 'sistema-v23';
 const ASSETS = ['./', 'index.html', 'style.css', 'js/01-data.js', 'js/02-state.js', 'js/03-core.js', 'js/04-activities.js', 'js/05-gear.js', 'js/06-progress.js', 'js/07-modes.js', 'js/08-render.js', 'js/09-input.js', 'js/10-boot.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'manifest-varka.webmanifest', 'icons/icon-varka.svg', 'icons/icon-varka-192.png', 'icons/icon-varka-512.png'];
 
 self.addEventListener('install', (e) => {

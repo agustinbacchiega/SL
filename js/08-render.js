@@ -323,7 +323,7 @@ function viewProfile() {
 
 function viewStatus() {
   const t = S.title ? TITLES[S.title].name : 'Ninguno';
-  return `${viewAvatar()}<div class="win"><div class="win-title">Estado</div>
+  return `<div class="win"><div class="win-title">Estado</div>
     <div class="row">
       <div><div class="big-level">${S.level}</div><div class="label">Nivel</div></div>
       <div style="text-align:right">
@@ -395,6 +395,7 @@ function viewQuests() {
       <p style="font-style:italic;margin-top:0">"${letterOfDay()}"</p>
       <p class="muted" style="text-align:right;margin:0">— Varka, desde la expedición</p></div>`;
     html += viewCommissions();
+    html += viewWeeklyRequest();
   }
   html += `<div class="win"><div class="win-title">Misión Diaria</div>
     ${pausedOn(today()) ? '<p class="center" style="margin-top:0;font-size:15px;color:var(--accent)">⏸ Modo pausa: hoy no hay castigo</p>' : ''}

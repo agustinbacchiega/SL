@@ -106,6 +106,10 @@ const yesterday = () => { const y = new Date(); y.setDate(y.getDate() - 1); retu
     await p.click('[data-tab=quests]');
     for (const id of await p.$$eval('[data-comm]', (bs) => bs.map((b) => b.dataset.comm))) { await p.click(`[data-comm="${id}"]`); await p.okAll(); }
     check('4 encargos diarios completos', (await p.evaluate(() => S.comm.done.length)) === 4);
+    check('petición semanal visible', !!(await p.$('#wreqDone')));
+    await p.click('#wreqDone');
+    const wr = await p.okAll();
+    check('petición semanal completa suma amistad', wr.some((m) => m.includes('Amistad con')), wr.join(' | '));
     await p.click('[data-tab=gear]'); await p.click('[data-wish="10"]'); await p.okAll();
     check('deseo ×10 entrega 10 piezas', (await p.evaluate(() => Object.values(S.gear.inv).reduce((a, n) => a + n, 0))) >= 1);
     await p.click('[data-tab=routines]');

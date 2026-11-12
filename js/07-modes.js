@@ -306,38 +306,86 @@ function viewSeason() {
   </div>`;
 }
 
-/* ================= AVATAR ================= */
+/* ================= WEEKLY REQUEST (Varka theme) ================= */
 
-const rankIndex = () => RANKS.filter(([lv]) => S.level >= lv).length - 1;
+// One request per week from someone in Mondstadt. Not only training: social,
+// creative, habits, adventure. Honor-based, like the rest of the app.
+const WEEKLY_REQUESTS = [
+  ['Diluc', 'Dueño del Viñedo del Amanecer', 'No es de muchas palabras, pero sabe que los lazos se cuidan.', 'Visitá o llamá a alguien con quien no hablás hace tiempo.', 'social'],
+  ['Klee', 'Caballero Chispeante', '¡Klee quiere ver algo que hayas creado vos!', 'Dedicá 30 minutos a crear algo: dibujar, cocinar una receta nueva, armar algo con tus manos.', 'creativo'],
+  ['Mona', 'Astróloga', 'Las estrellas ayudan, pero un plan escrito ayuda más.', 'Escribí un plan para la semana que viene: objetivos, horarios y comidas.', 'hábitos'],
+  ['Fischl', 'Princesa del Juicio', '¡Mi narrador real necesita nuevas crónicas!', 'Escribí una página: un cuento, un poema o una carta.', 'creativo'],
+  ['Bennett', 'Líder del Club Benny', 'Todo aventurero empieza con algo nuevo, ¡aunque salga mal!', 'Probá un deporte o una actividad física que nunca hayas hecho.', 'aventura'],
+  ['Razor', 'Chico lobo de Wolvendom', 'Bosque. Aire. Lupical. Bueno.', 'Pasá al menos 1 hora en la naturaleza: parque, plaza grande, montaña o playa.', 'aventura'],
+  ['Sucrose', 'Alquimista', 'La curiosidad es el primer paso de todo experimento.', 'Dedicá 1 hora a aprender algo nuevo que te interese.', 'mente'],
+  ['Rosaria', 'Hermana de la Iglesia de Favonius', 'No me gusta el ruido. Probá el silencio.', 'Pasá una noche entera sin redes sociales.', 'hábitos'],
+  ['Mika', 'Cartógrafo de la expedición', 'Todo mapa empieza caminando por donde nunca fuiste.', 'Caminá 5 km por una zona que no conozcas.', 'aventura'],
+  ['Lisa', 'Bibliotecaria de los Caballeros', 'Querido, esos libros no se van a leer solos.', 'Leé 50 páginas en la semana.', 'mente'],
+  ['Kaeya', 'Capitán de Caballería', 'Una buena comida es mejor estrategia de lo que parece.', 'Cocinate algo saludable que nunca hayas preparado.', 'hábitos'],
+  ['Noelle', 'Sirvienta de los Caballeros', '¡Un caballero empieza por cuidar su propio hogar!', 'Hacé una limpieza a fondo de un ambiente de tu casa.', 'hábitos'],
+  ['Jean', 'Gran Maestra en funciones', 'Proteger Mondstadt también es ayudar a quien lo necesita.', 'Ayudá a alguien con algo que le cueste.', 'social'],
+  ['Eula', 'Capitana de Reconocimiento', 'La gracia también es fuerza. Lo anotaré en mi libro de venganza si no lo hacés.', 'Hacé 3 sesiones de 20 minutos de movilidad, yoga o baile.', 'cuerpo'],
+  ['Albedo', 'Alquimista Jefe', 'Un espacio ordenado es una mente ordenada.', 'Ordená tu escritorio y tus archivos digitales.', 'hábitos'],
+  ['Venti', 'Bardo errante', '¡Una canción por un vaso de... jugo de manzana!', 'Escuchá un álbum completo sin hacer otra cosa, o aprendé una canción.', 'creativo'],
+  ['Amber', 'Exploradora', '¡Desde arriba todo se ve mejor!', 'Subí a un lugar alto con buena vista: un cerro, una terraza o un mirador.', 'aventura'],
+  ['Diona', 'Barman del Cola de Gato', 'El alcohol arruina a los caballeros. ¡Es mi misión destruir la industria del vino!', 'Pasá la semana sin alcohol ni bebidas azucaradas.', 'hábitos'],
+  ['Barbara', 'Diaconisa e ídolo de Mondstadt', '¡Dormir bien también es cuidarse!', 'Dormí 7 horas o más durante 5 noches esta semana.', 'hábitos'],
+  ['Dahlia', 'Diácono de la Iglesia', 'A veces la mejor ayuda es escuchar.', 'Tené una conversación larga y sin pantallas con alguien.', 'social'],
+];
 
-// Layered silhouette that grows with rank: aura, weapon, cape, glowing eyes, crown, flames.
-function avatarSVG(i = rankIndex(), size = 120) {
-  const v = S.theme === 'varka';
-  const c = (v ? ['#8fb5ad', '#4fd1b4', '#7fe0c8', '#e8c46a', '#f0a35e', '#fff1c9', '#ffd36b'] : ['#7f8ea3', '#3fb6ff', '#46d39a', '#ffd36b', '#ff7a59', '#b48cff', '#8b5cff'])[i];
-  const id = 'av' + i + (v ? 'v' : '');
-  return `<svg viewBox="0 0 120 140" width="${size}" height="${size * 140 / 120}" xmlns="http://www.w3.org/2000/svg" aria-label="Avatar">
-    <defs><radialGradient id="${id}" cx="50%" cy="55%" r="50%"><stop offset="0" stop-color="${c}" stop-opacity="${0.15 + i * 0.1}"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient></defs>
-    <circle cx="60" cy="72" r="58" fill="url(#${id})"/>
-    ${i >= 6 ? [0, 1, 2, 3, 4, 5, 6].map((k) => `<path d="M${18 + k * 14} 128 Q${22 + k * 14} ${92 - (k % 3) * 10} ${26 + k * 14} 128 Z" fill="${c}" opacity=".55"/>`).join('') : ''}
-    ${i >= 3 ? `<path d="M34 78 Q60 70 86 78 L100 134 L20 134 Z" fill="${c}" opacity=".35"/>` : ''}
-    <path d="M30 134 Q30 84 60 76 Q90 84 90 134 Z" fill="#0b1424" stroke="${c}" stroke-width="2"/>
-    ${!v && i < 3 ? `<path d="M40 50 Q40 22 60 22 Q80 22 80 50 Q80 64 60 66 Q40 64 40 50 Z" fill="#0b1424" stroke="${c}" stroke-width="2"/>` : ''}
-    <circle cx="60" cy="47" r="15" fill="#0b1424" stroke="${c}" stroke-width="2"/>
-    ${v && i >= 1 ? `<path d="M45 44 Q60 26 75 44 L75 50 L45 50 Z" fill="#0b1424" stroke="${c}" stroke-width="2"/>` : ''}
-    ${i >= 4 ? `<ellipse cx="54" cy="48" rx="3" ry="1.6" fill="${c}"/><ellipse cx="66" cy="48" rx="3" ry="1.6" fill="${c}"/>` : ''}
-    ${i >= 2 ? (v ? `<path d="M92 132 L100 62 L104 62 L98 132 Z" fill="${c}"/><rect x="94" y="88" width="14" height="3" fill="${c}"/>`
-      : `<path d="M86 112 L104 82 L107 84 L90 114 Z" fill="${c}"/><rect x="84" y="111" width="8" height="3" transform="rotate(-58 88 112)" fill="${c}"/>`) : ''}
-    ${i >= 5 ? (v ? `<path d="M60 30 Q70 14 82 20 Q70 22 64 32 Z" fill="${c}"/>`
-      : `<path d="M46 34 L50 22 L55 31 L60 18 L65 31 L70 22 L74 34 Z" fill="${c}"/>`) : ''}
-  </svg>`;
+function ensureWeeklyRequest() {
+  if (S.theme !== 'varka' || !S.profile) return;
+  const wk = weekStart();
+  if (S.wreq && S.wreq.week === wk) return;
+  const prev = S.wreq ? S.wreq.idx : -1;
+  let idx;
+  do idx = Math.floor(Math.random() * WEEKLY_REQUESTS.length); while (idx === prev);
+  S.wreq = { week: wk, idx, done: false, rerolled: false };
+  save();
 }
 
-function viewAvatar() {
-  return `<div class="win" style="display:flex;align-items:center;gap:14px">
-    <div style="flex:none">${avatarSVG()}</div>
-    <div><div class="label">${S.theme === 'varka' ? 'Caballero' : 'Cazador'}</div>
-      <div style="font-size:24px;font-weight:700">${esc(S.name)}</div>
-      <div class="muted">Rango <b class="gold">${rank()}</b></div>
-      <div class="muted" style="font-size:13px">${rankIndex() < RANKS.length - 1 ? `Nueva apariencia en nivel ${RANKS[rankIndex() + 1][0]}` : 'Apariencia máxima'}</div></div>
+function rerollWeeklyRequest() {
+  const w = S.wreq;
+  if (!w || w.done || w.rerolled) return;
+  let idx;
+  do idx = Math.floor(Math.random() * WEEKLY_REQUESTS.length); while (idx === w.idx);
+  w.idx = idx; w.rerolled = true;
+  save(); render();
+}
+
+function completeWeeklyRequest() {
+  const w = S.wreq;
+  if (!w || w.done) return;
+  w.done = true;
+  const [who] = WEEKLY_REQUESTS[w.idx];
+  S.friends = S.friends || {};
+  S.friends[who] = (S.friends[who] || 0) + 1;
+  S.wreqDone = (S.wreqDone || 0) + 1;
+  gainProto(160);
+  const xp = gainXP(300);
+  addItem('box');
+  hitBoss('secret');
+  dayLog().wreq = who;
+  notify('Petición Semanal', `"¡Gracias! Mondstadt tiene suerte de tenerte."\n— ${who}\n\nRecompensas:\n• XP +${xp}\n• Cofre de Mondstadt ×1\n• Amistad con ${who}: ${S.friends[who]}`);
+  save(); render();
+}
+
+function viewWeeklyRequest() {
+  if (S.theme !== 'varka') return '';
+  ensureWeeklyRequest();
+  const w = S.wreq;
+  if (!w) return '';
+  const [who, role, quote, task, kind] = WEEKLY_REQUESTS[w.idx];
+  const end = new Date(w.week + 'T00:00'); end.setDate(end.getDate() + 7);
+  const days = Math.ceil((end - Date.now()) / 864e5);
+  return `<div class="win"><div class="win-title">Petición Semanal</div>
+    <p class="center" style="margin-top:0"><b>${who}</b><br><span class="muted" style="font-size:14px">${role}</span></p>
+    <p style="font-style:italic;font-size:15px">"${quote}"</p>
+    <p style="margin:6px 0"><b>${task}</b> <span class="tag">${kind}</span></p>
+    <p class="muted" style="font-size:13px;margin:4px 0">Recompensa: 300 XP · 160 💎 · Cofre · +1 amistad con ${who}${w.done ? '' : ` · Quedan ${days} día${days === 1 ? '' : 's'}`}</p>
+    ${w.done ? `<p class="center" style="color:var(--accent)">✔ Completada · Amistad con ${who}: ${S.friends[who]}</p>`
+      : `<button class="btn block" id="wreqDone">Completada</button>
+         ${w.rerolled ? '' : '<button class="btn block small" id="wreqReroll" style="opacity:.8">Pedir otra petición (1 vez por semana)</button>'}`}
+    ${S.wreqDone ? `<p class="center muted" style="font-size:13px;margin:6px 0 0">Peticiones completadas: ${S.wreqDone}</p>` : ''}
   </div>`;
 }

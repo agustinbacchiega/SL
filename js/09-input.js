@@ -94,6 +94,8 @@ document.addEventListener('click', (ev) => {
     case 'claim': return claimDaily();
     case 'survive': return clearPenalty();
     case 'emgDone': return completeEmergency();
+    case 'wreqDone': return completeWeeklyRequest();
+    case 'wreqReroll': return rerollWeeklyRequest();
     case 'pauseStart':
       if (confirm('¿Activar el modo pausa? Los días usados no se recuperan este mes.')) startPause(Number($('#pauseDays').value), $('#pauseReason').value);
       return;
