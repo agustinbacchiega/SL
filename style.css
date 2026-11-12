@@ -198,3 +198,4 @@ body { overflow-x: hidden; }
 #peek { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 5; will-change: transform; }
 #peek .peek-inner { max-width: 560px; margin: 0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px 0; }
 #peek[hidden] { display: none !important; }
+.cal-d.paused { background: rgba(127, 163, 192, .18); border-color: var(--muted); }

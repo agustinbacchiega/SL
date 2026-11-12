@@ -58,6 +58,10 @@ Las repeticiones y series se ajustan a tu nivel, la cantidad de ejercicios a tu 
 - **Reevaluación de rango** mensual según las pruebas de fuerza, independiente del nivel.
 - **Semana de descarga** automática cada 6 semanas: objetivos y rutinas −30% (se puede desactivar).
 - **Régimen del Gran Maestro** (tema Favonius): tras 2 semanas de constancia y superar una prueba de un día, la diaria pasa a ×1,5 y las rutinas suman una serie, a cambio de +50% de XP, protogemas ×2, semana perfecta con premio y un mandoble exclusivo. Dos ausencias en una semana lo quitan.
+- **Modo pausa**: hasta 7 días por mes sin castigos y con la racha congelada (enfermedad, lesión o viaje).
+- **Pase de temporada** mensual de 30 niveles con recompensas y título de campeón.
+- **Avatar** que evoluciona con el rango.
+- **Encargos diarios** (tema Favonius): 4 tareas chicas por día del Gremio de Aventureros.
 - **Diario**: en el Calendario, cada día tiene una entrada de texto y un estado de ánimo. La de hoy da +15 XP y los días con entrada se marcan con ✎.
 - **Logros** con 4 o 5 niveles cada uno y recompensas, y **títulos con requisitos visibles** (salvo los secretos).
 
@@ -82,5 +86,14 @@ Una app web no puede bloquear otras apps por sí sola, así que se apoya en el s
    - **iPhone (Safari)**: Compartir → *Agregar a inicio*.
 
 Para probarla en local: `python3 -m http.server` y entrá a `http://localhost:8000`.
+
+## Código y pruebas
+
+El código está en `js/`, dividido por área y cargado en orden (`01-data.js` … `10-boot.js`). Las pruebas de punta a punta (`tests/e2e.js`, con Playwright) corren en GitHub Actions antes de cada publicación; si fallan, no se publica.
+
+```
+python3 -m http.server 8765 &
+node tests/e2e.js
+```
 
 Fan app sin afiliación oficial.
