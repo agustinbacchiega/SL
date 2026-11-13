@@ -17,7 +17,7 @@ function rollEvent() {
   if (!S.awakened || !S.profile || S.eventDay === today() || pausedOn(today())) return;
   S.eventDay = today();
   S.event = null;
-  if (Math.random() >= 0.35 + (hasSkill('Instinto del Cazador') ? 0.15 : 0)) { save(); return; }
+  if (Math.random() >= 0.35 + (hasSkill('Instinto del Cazador') ? 0.15 : 0) + (cons() >= 4 ? 0.15 : 0)) { save(); return; }
   const type = pick(['emergency', 'emergency', 'merchant', 'gate', 'blessing', 'chest']);
   const ev = { date: today(), type, done: false };
   if (type === 'emergency') {
@@ -205,10 +205,24 @@ function ensureBoss() {
   const wk = weekStart();
   if (S.boss && S.boss.week === wk) return;
   if (S.boss && !S.boss.defeated && S.boss.hp < S.boss.max)
-    notify('Jefe Semanal', `<b>${S.boss.name}</b> escapó con ${S.boss.hp} HP.\n\nUn nuevo jefe apareció esta semana.`);
+    notify('Jefe Semanal', `<b>${bossName()}</b> escapó con ${S.boss.hp} HP.\n\nUn nuevo jefe apareció esta semana.`);
   const n = Math.round((new Date(wk) - new Date('2024-01-01')) / (7 * 864e5));
-  const max = 350 + 80 * TRAIN_DAYS[+S.profile.answers.activity].length;
-  S.boss = { week: wk, n, max, hp: max, defeated: false, hits: [] };
+  S.boss = { week: wk, n, max: bossMaxHP(), hp: bossMaxHP(), defeated: false, hits: [], v: 2 };
+}
+
+// Tougher boss: more HP and at most BOSS_DAY_CAP damage per day, so it takes
+// at least 4 days of real work instead of one or two busy ones.
+const BOSS_DAY_CAP = 300;
+const bossMaxHP = () => 500 + 150 * TRAIN_DAYS[+S.profile.answers.activity].length;
+const bossDmgToday = () => (S.boss.hits || []).filter((h) => h.date === today()).reduce((a, h) => a + h.dmg, 0);
+
+// Bosses created before the rebalance get the new HP, keeping the damage already dealt.
+function upgradeBoss() {
+  const b = S.boss;
+  if (!b || b.v === 2 || b.defeated) return;
+  const max = bossMaxHP();
+  b.hp = Math.max(1, b.hp + (max - b.max));
+  b.max = max; b.v = 2;
 }
 
 const bossName = () => {
@@ -221,11 +235,14 @@ function hitBoss(kind) {
   ensureBoss();
   const b = S.boss;
   if (!b || b.defeated) return;
-  const dmg = BOSS_DMG[kind] || BOSS_DMG.side;
+  upgradeBoss();
+  const dmg = Math.min(BOSS_DMG[kind] || BOSS_DMG.side, BOSS_DAY_CAP - bossDmgToday());
+  if (dmg <= 0) return;
   b.hp = Math.max(0, b.hp - dmg);
   b.hits = [{ kind, dmg, date: today() }, ...b.hits].slice(0, 6);
   if (b.hp > 0) return;
   b.defeated = true;
+  S.bossKills = (S.bossKills || 0) + 1;
   const xp = gainXP(300);
   const g = gainGold(300);
   addItem('box'); addItem('key');
@@ -239,6 +256,7 @@ const HIT_LABEL = { commission: 'Encargo', daily: 'Misión diaria', routine: 'Ru
 
 function viewBoss() {
   ensureBoss();
+  upgradeBoss();
   const b = S.boss;
   if (!b) return '';
   const end = new Date(b.week + 'T00:00'); end.setDate(end.getDate() + 7);
@@ -246,10 +264,11 @@ function viewBoss() {
   return `<div class="win boss-win">
     <div class="row"><span class="label">Jefe semanal</span><span class="muted" style="font-size:13px">${b.defeated ? '✔ Derrotado' : `${days} día${days === 1 ? '' : 's'}`}</span></div>
     <div class="row" style="margin-top:2px"><b class="red" style="font-size:15px">${bossName()}</b>${b.defeated ? '' : `<span class="muted" style="font-size:13px">${b.hp} / ${b.max}</span>`}</div>
+    ${b.defeated ? '' : `<div class="muted" style="font-size:12px;text-align:right">Daño hoy: ${bossDmgToday()} / ${BOSS_DAY_CAP}</div>`}
     ${b.defeated ? '' : bar('hp', b.hp, b.max)}
     <details><summary class="muted" style="font-size:13px">Daño y recompensa</summary>
       <p class="muted" style="font-size:13px;margin:4px 0">Diaria ${BOSS_DMG.daily} · rutina ${BOSS_DMG.routine} · mazmorra ${BOSS_DMG.dungeon} · secreta ${BOSS_DMG.secret} · emergencia ${BOSS_DMG.emergency} · prueba ${BOSS_DMG.test} · secundaria ${BOSS_DMG.side} · diario ${BOSS_DMG.journal}.<br>
-      Recompensa: 300 XP, 300 de oro, Caja y Llave.</p>
+      Máximo ${BOSS_DAY_CAP} de daño por día. Recompensa: 300 XP, 300 de oro, Caja y Llave.</p>
       ${b.hits.length ? `<div class="muted" style="font-size:13px">Últimos golpes: ${b.hits.map((h) => `${HIT_LABEL[h.kind] || h.kind} −${h.dmg}`).join(' · ')}</div>` : ''}
     </details>
   </div>`;

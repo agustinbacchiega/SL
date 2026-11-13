@@ -201,3 +201,13 @@ body { overflow-x: hidden; }
 .cal-d.paused { background: rgba(127, 163, 192, .18); border-color: var(--muted); }
 .boss-win { padding: 10px 14px; }
 .boss-win .bar { margin: 4px 0 2px; }
+
+/* Constellation */
+.cons-map { width: 100%; height: auto; display: block; margin: 4px 0 8px; }
+.cons-map line { stroke: rgba(127, 163, 192, .3); stroke-width: 1.5; stroke-dasharray: 3 4; }
+.cons-map line.on { stroke: var(--gold); stroke-dasharray: none; }
+.cons-map circle { fill: #0b1424; stroke: rgba(127, 163, 192, .5); stroke-width: 2; }
+.cons-map circle.on { fill: var(--gold); stroke: #fff6d6; filter: drop-shadow(0 0 6px var(--gold)); }
+.cons-map text { fill: var(--muted); font: 11px var(--font); }
+.c6-name { color: var(--gold); text-shadow: 0 0 10px var(--gold); font-weight: 700; }
+.cal-d.shielded { border-color: var(--gold); }

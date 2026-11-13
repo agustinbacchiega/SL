@@ -62,6 +62,7 @@ Las repeticiones y series se ajustan a tu nivel, la cantidad de ejercicios a tu 
 - **Pase de temporada** mensual de 30 niveles con recompensas y título de campeón.
 - **Petición semanal** (tema Favonius): cada semana un personaje de Mondstadt pide algo distinto (social, creativo, hábitos, aventura), con amistad por personaje.
 - **Encargos diarios** (tema Favonius): 4 tareas chicas por día del Gremio de Aventureros.
+- **Constelación** C1–C6: estrellas propias que se encienden con metas (diarias, nivel, jefes, racha, rutinas) y dan efectos; la C6 activa la Resonancia Estelar.
 - **Diario**: en el Calendario, cada día tiene una entrada de texto y un estado de ánimo. La de hoy da +15 XP y los días con entrada se marcan con ✎.
 - **Logros** con 4 o 5 niveles cada uno y recompensas, y **títulos con requisitos visibles** (salvo los secretos).
 

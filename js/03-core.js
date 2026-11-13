@@ -72,6 +72,8 @@ function gainXP(base, source) {
   if (titleIs('legend')) mult += 0.2;
   if (titleIs('srank')) mult += 0.1;
   if (titleIs('season')) mult += 0.05;
+  if (source === 'daily' && cons() >= 1) mult += 0.15;
+  if (cons() >= 6) mult += 0.1;
   if (titleIs('gm')) mult += 0.1;
   if (gmOn() && ['daily', 'routine', 'dungeon'].includes(source)) mult += 0.5;
   mult += gearBonus().xp;
@@ -86,12 +88,12 @@ function gainXP(base, source) {
   while (S.xp >= xpNeeded()) {
     S.xp -= xpNeeded();
     S.level++; ups++;
-    S.ap += 5;
+    S.ap += apPerLevel();
     gainProto(50);
   }
   if (ups) {
     S.hp = maxHP(); S.mp = maxMP(); S.fatigue = 0;
-    notify('Notificación', `¡Subiste de nivel!\n\nNivel ${S.level - ups} → <b>${S.level}</b>\nPuntos de habilidad +${ups * 5}\n\nHP, MP y Fatiga restaurados.`);
+    notify('Notificación', `¡Subiste de nivel!\n\nNivel ${S.level - ups} → <b>${S.level}</b>\nPuntos de habilidad +${ups * apPerLevel()}\n\nHP, MP y Fatiga restaurados.`);
     SKILLS.forEach((sk) => {
       if (!sk.job && sk.lv > S.level - ups && sk.lv <= S.level && S.equipped && S.equipped.length < maxSlots()) S.equipped.push(sk.name);
       if (!sk.job && sk.lv > S.level - ups && sk.lv <= S.level)
@@ -169,6 +171,7 @@ function claimDaily() {
     S.shadows.push(sh);
     extra = `\n\n<span class="arise">¡LEVÁNTATE!</span>\nLa sombra <b>${sh}</b> se ha unido a tu ejército.`;
   }
+  extra += resonance(xp, g);
   notify('Misión Diaria', `Has completado la misión diaria\n[Preparativos para volverse poderoso].\n\nRecompensas:\n• Recuperación total\n• Puntos de habilidad +3\n• Caja Aleatoria ×1\n• XP +${xp}  ·  Oro +${g}${extra}`);
   if (S.profile && S.totalDaily % 7 === 0) raiseDifficulty();
   if (!autoClaim && new Date().getHours() < 7) unlockTitle('early');
@@ -214,6 +217,9 @@ function rollover() {
   }
   if (missed && S.awakened && S.daily.date && pausedOn(S.daily.date)) {
     dayLog(S.daily.date).paused = true;
+    S.daily = freshDaily(t);
+  } else if (missed && S.awakened && S.daily.date && consShield()) {
+    dayLog(S.daily.date).shielded = true;
     S.daily = freshDaily(t);
   } else if (missed && S.awakened && S.daily.date) {
     S.streak = 0;

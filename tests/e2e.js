@@ -71,6 +71,20 @@ const yesterday = () => { const y = new Date(); y.setDate(y.getDate() - 1); retu
     await p.okAll();
     const ps = await p.evaluate(() => ({ pen: !!S.penalty, streak: S.streak }));
     check('modo pausa evita castigo y congela la racha', !ps.pen && ps.streak === 4, JSON.stringify(ps));
+    // Constellation C3 shield, boss daily damage cap, 3 ability points per level
+    await p.evaluate(() => { S.pause = null; S.totalDaily = 30; S.level = 25; S.bossKills = 6; save(); });
+    await p.okAll();
+    check('constelación se enciende por metas', (await p.evaluate(() => S.cons)) === 3);
+    await p.evaluate(() => { S.streak = 9; const y = new Date(); y.setDate(y.getDate() - 1); S.daily.date = today(y); S.daily.claimed = false; for (const k in S.targets) S.daily.progress[k] = 0; rollover(); render(); });
+    await p.okAll();
+    const sh = await p.evaluate(() => ({ pen: !!S.penalty, streak: S.streak }));
+    check('C3 protege una falta por semana', !sh.pen && sh.streak === 9, JSON.stringify(sh));
+    const cap = await p.evaluate(() => { ensureBoss(); for (let i = 0; i < 20; i++) hitBoss('dungeon'); return { dealt: bossDmgToday(), hp: S.boss.hp, max: S.boss.max }; });
+    await p.okAll();
+    check('jefe semanal con tope de daño diario', cap.dealt === 300 && cap.hp === cap.max - 300 && cap.max >= 950, JSON.stringify(cap));
+    const ap = await p.evaluate(() => { const before = S.ap; S.xp = 0; gainXP(xpNeeded()); return S.ap - before; });
+    await p.okAll();
+    check('3 puntos de habilidad por nivel', ap === 3, ap);
     check('sin errores (castigo/pausa)', p.errors.length === 0, p.errors.join(' | '));
     await p.context().close();
   }

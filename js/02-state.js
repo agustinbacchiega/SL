@@ -32,7 +32,7 @@ function defaultState() {
     equipped: null, event: null, eventDay: null, tests: {}, prs: 0, emergencies: 0, sideDone: 0, ach: {},
     journal: {},
     gear: { primos: 1600, pity5: 0, pity4: 0, inv: {}, eq: {} },
-    pause: null, pauseDays: [], comm: null, season: null, seasonWins: 0, wreq: null, wreqDone: 0, friends: {},
+    pause: null, pauseDays: [], comm: null, season: null, seasonWins: 0, wreq: null, wreqDone: 0, friends: {}, cons: 0, bossKills: 0, consShield: null,
     gm: { unlocked: false, active: false, trial: null, lastFail: null, misses: [], perfect: null },
   };
 }
@@ -55,6 +55,8 @@ function load() {
       st.journal = st.journal || {};
       st.gear = Object.assign(defaultState().gear, st.gear);
       st.gm = Object.assign(defaultState().gm, st.gm);
+      // Weekly bosses beaten before kills were counted
+      if (st.bossKills == null) st.bossKills = Object.values(st.log || {}).filter((L) => L.boss).length;
       if (!st.log) {
         // Build the calendar from what older versions already stored.
         st.log = {};
@@ -72,6 +74,7 @@ function save() {
   checkRealStats();
   checkAchievements();
   gmReadyNotice();
+  checkConstellation();
   try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
 }
 
@@ -109,7 +112,7 @@ const letterOfDay = () => {
   return list[[...today()].reduce((h, c) => h + c.charCodeAt(0), 0) % list.length];
 };
 const skillUnlocked = (s) => (s.job ? S.job !== 'Ninguno' : S.level >= s.lv);
-const maxSlots = () => 3 + (S.level >= 25 ? 1 : 0) + (S.job !== 'Ninguno' ? 1 : 0);
+const maxSlots = () => 3 + (S.level >= 25 ? 1 : 0) + (S.job !== 'Ninguno' ? 1 : 0) + ((S.cons || 0) >= 2 ? 1 : 0);
 const hasSkill = (name) => SKILLS.some((s) => s.name === name && skillUnlocked(s) && (s.job || (S.equipped || []).includes(name)));
 function ensureEquipped() {
   if (!Array.isArray(S.equipped)) S.equipped = SKILLS.filter((s) => !s.job && skillUnlocked(s)).slice(0, maxSlots()).map((s) => s.name);

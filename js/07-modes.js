@@ -306,6 +306,77 @@ function viewSeason() {
   </div>`;
 }
 
+/* ================= CONSTELLATION ================= */
+
+// Your own constellation: six stars unlocked in order by personal milestones.
+const CONSTELLATION = [
+  { name: ['Primer Destello', 'Brisa del Alba'], req: '30 misiones diarias completadas', prog: () => [S.totalDaily, 30],
+    desc: 'La misión diaria otorga +15% de XP.' },
+  { name: ['Pulso del Cazador', 'Filo del Oeste'], req: 'Alcanzar el nivel 25', prog: () => [S.level, 25],
+    desc: '+1 ranura de habilidad.' },
+  { name: ['Segunda Oportunidad', 'Juramento Inquebrantable'], req: 'Derrotar 6 jefes semanales', prog: () => [S.bossKills || 0, 6],
+    desc: 'Una vez por semana, si no completás la diaria, no hay castigo y la racha no se rompe.' },
+  { name: ['Ojo del Cazador', 'Mirada del Explorador'], req: 'Mejor racha de 30 días', prog: () => [S.bestStreak, 30],
+    desc: 'Los eventos aleatorios aparecen más seguido (+15%) y las mazmorras raras son más probables.' },
+  { name: ['Forja Interior', 'Forja de Mondstadt'], req: '75 rutinas completadas', prog: () => [S.routineLog.length, 75],
+    desc: 'Cada nivel otorga 4 puntos de habilidad en lugar de 3.' },
+  { name: ['Monarca de Su Propia Estrella', 'Estrella del Viento Libre'], req: 'Mejor racha de 100 días', prog: () => [S.bestStreak, 100],
+    desc: 'Toda la XP +10%. Además, cada misión diaria tiene 25% de activar la <b>Resonancia Estelar</b>: todas sus recompensas se duplican (XP, oro, caja, puntos de habilidad y 💎). Tu nombre brilla en dorado.' },
+];
+const cons = () => S.cons || 0;
+const consName = (i) => CONSTELLATION[i].name[S.theme === 'varka' ? 1 : 0];
+const apPerLevel = () => (cons() >= 5 ? 4 : 3);
+
+function checkConstellation() {
+  if (!S.awakened || !S.profile) return;
+  while (cons() < 6) {
+    const [have, need] = CONSTELLATION[cons()].prog();
+    if (have < need) break;
+    S.cons = cons() + 1;
+    const c = CONSTELLATION[cons() - 1];
+    notify('Constelación', `✦ Se encendió una estrella de tu constelación ✦\n\n<b>C${cons()} · ${consName(cons() - 1)}</b>\n\n${c.desc}`);
+    if (cons() === 2) ensureEquipped();
+  }
+}
+
+// Weekly shield from C3: returns true when it absorbed a missed day.
+function consShield() {
+  if (cons() < 3 || S.consShield === weekStart()) return false;
+  S.consShield = weekStart();
+  notify('Constelación', `<b>C3 · ${consName(2)}</b>\n\nNo completaste la misión diaria, pero tu constelación te protegió.\nSin castigo y tu racha sigue intacta.\n\nSe recarga el lunes.`);
+  return true;
+}
+
+function resonance(xp, g) {
+  if (cons() < 6 || Math.random() >= 0.25) return '';
+  const xp2 = gainXP(xp, 'daily');
+  const g2 = gainGold(g);
+  addItem('box'); S.ap += 3; gainProto(60);
+  return `\n\n✨ <b>Resonancia Estelar</b> ✨\nRecompensas duplicadas: XP +${xp2} · Oro +${g2} · Caja · +3 puntos`;
+}
+
+function viewConstellation() {
+  const pts = [[30, 80], [80, 40], [135, 70], [185, 25], [240, 60], [285, 30]];
+  const lit = cons();
+  const svg = `<svg viewBox="0 0 315 110" class="cons-map" role="img" aria-label="Constelación C${lit}">
+    ${pts.slice(1).map(([x, y], i) => `<line x1="${pts[i][0]}" y1="${pts[i][1]}" x2="${x}" y2="${y}" class="${i + 1 < lit ? 'on' : ''}"/>`).join('')}
+    ${pts.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i === 5 ? 9 : 7}" class="${i < lit ? 'on' : ''}"/><text x="${x}" y="${y + 24}" text-anchor="middle">C${i + 1}</text>`).join('')}
+  </svg>`;
+  return `<div class="win"><div class="win-title">Constelación</div>
+    <p class="center muted" style="margin-top:0;font-size:14px">${esc(S.name)} · <b class="gold">C${lit}</b> de 6</p>
+    ${svg}
+    ${CONSTELLATION.map((c, i) => {
+      const on = i < lit, next = i === lit;
+      const [have, need] = c.prog();
+      return `<div style="padding:8px 0;border-bottom:1px dashed rgba(63,182,255,.25);${on || next ? '' : 'opacity:.55'}">
+        <div class="row"><b>${on ? '✦' : '✧'} C${i + 1} · ${consName(i)}</b>${on ? '<span class="tag">Activa</span>' : ''}</div>
+        <div style="font-size:14px;margin-top:2px">${c.desc}</div>
+        ${on ? '' : `<div class="muted" style="font-size:13px;margin-top:3px">Requisito: ${c.req}${next ? ` · ${Math.min(have, need)} / ${need}` : i > lit ? ' (requiere la anterior)' : ''}</div>${next ? bar('', Math.min(have, need), need) : ''}`}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
 /* ================= WEEKLY REQUEST (Varka theme) ================= */
 
 // One request per week from someone in Mondstadt. Not only training: social,

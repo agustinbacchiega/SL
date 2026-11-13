@@ -130,7 +130,7 @@ function makeDungeon(tier) {
   const pool = EX_POOL.filter((e) => !e[4].includes(a.injury));
   const prefer = { fat: 'cardio', endurance: 'cardio', muscle: 'str', recomp: 'str' }[a.goal];
   const weighted = pool.flatMap((e) => (e[3] === prefer ? [e, e, e] : [e]));
-  const r = Math.random(), luck = hasSkill('Instinto del Cazador') ? 0.06 : 0;
+  const r = Math.random(), luck = (hasSkill('Instinto del Cazador') ? 0.06 : 0) + (cons() >= 4 ? 0.06 : 0);
   const variant = r < 0.07 + luck ? 'double' : r < 0.27 + luck * 2 ? 'red' : 'normal';
   const waves = variant === 'normal' ? 2 : 3;
   const vm = variant === 'normal' ? 1 : 1.3;

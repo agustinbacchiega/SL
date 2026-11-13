@@ -205,6 +205,7 @@ function dayStatus(d) {
   if (!L) return '';
   if (L.daily) return 'done';
   if (L.paused) return 'paused';
+  if (L.shielded) return 'shielded';
   if (L.penalty && !L.survived) return 'penalty';
   if (L.missed) return 'missed';
   return L.routines || L.side || L.dungeon ? 'partial' : '';
@@ -327,7 +328,7 @@ function viewStatus() {
     <div class="row">
       <div><div class="big-level">${S.level}</div><div class="label">Nivel</div></div>
       <div style="text-align:right">
-        <div><span class="label">Nombre:</span> ${esc(S.name)}</div>
+        <div><span class="label">Nombre:</span> <span class="${cons() >= 6 ? 'c6-name' : ''}">${esc(S.name)}</span></div>
         <div><span class="label">Clase:</span> ${S.job}</div>
         <div><span class="label">Título:</span> ${t}</div>
         <div><span class="label">Rango:</span> <span class="rank">${rank()}</span></div>
@@ -352,6 +353,7 @@ function viewStatus() {
     ${S.shadows.length ? `<div class="row"><span class="label">Ejército de sombras</span><b style="color:var(--purple)">${S.shadows.length}</b></div>` : ''}
   </div>
   <button class="btn block" id="card" style="margin:-4px 0 16px">🪪 Tarjeta de cazador</button>
+  ${viewConstellation()}
   ${viewCalendar()}
   ${viewProgress()}
   ${viewProfile()}
