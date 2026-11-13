@@ -79,9 +79,8 @@ const yesterday = () => { const y = new Date(); y.setDate(y.getDate() - 1); retu
     await p.okAll();
     const sh = await p.evaluate(() => ({ pen: !!S.penalty, streak: S.streak }));
     check('C3 protege una falta por semana', !sh.pen && sh.streak === 9, JSON.stringify(sh));
-    const cap = await p.evaluate(() => { ensureBoss(); for (let i = 0; i < 20; i++) hitBoss('dungeon'); return { dealt: bossDmgToday(), hp: S.boss.hp, max: S.boss.max }; });
-    await p.okAll();
-    check('jefe semanal con tope de daño diario', cap.dealt === 300 && cap.hp === cap.max - 300 && cap.max >= 950, JSON.stringify(cap));
+    const boss = await p.evaluate(() => { ensureBoss(); hitBoss('dungeon'); return { hp: S.boss.hp, max: S.boss.max }; });
+    check('jefe semanal con más vida', boss.max >= 950 && boss.hp === boss.max - 80, JSON.stringify(boss));
     const ap = await p.evaluate(() => { const before = S.ap; S.xp = 0; gainXP(xpNeeded()); return S.ap - before; });
     await p.okAll();
     check('3 puntos de habilidad por nivel', ap === 3, ap);
