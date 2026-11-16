@@ -66,7 +66,7 @@ const yesterday = () => { const y = new Date(); y.setDate(y.getDate() - 1); retu
     await p.evaluate(() => { S.penalty = null; const y = new Date(); y.setDate(y.getDate() - 1); S.daily.date = today(y); for (const k in S.targets) S.daily.progress[k] = S.targets[k]; rollover(); render(); });
     const auto = await p.okAll();
     check('diaria completa sin reclamar se reclama sola', auto.some((m) => m.includes('reclamó por vos')) && !(await p.evaluate(() => !!S.penalty)), auto.join(' | '));
-    await p.click('[data-tab=more]'); await p.selectOption('#pauseDays', '2'); await p.click('#pauseStart'); await p.okAll();
+    await p.click('[data-tab=more]'); await p.click('[data-fold=pause] > summary'); await p.selectOption('#pauseDays', '2'); await p.click('#pauseStart'); await p.okAll();
     await p.evaluate(() => { S.streak = 4; const y = new Date(); y.setDate(y.getDate() - 1); S.daily.date = today(y); S.pause.from = today(y); rollover(); render(); });
     await p.okAll();
     const ps = await p.evaluate(() => ({ pen: !!S.penalty, streak: S.streak }));
@@ -100,6 +100,7 @@ const yesterday = () => { const y = new Date(); y.setDate(y.getDate() - 1); retu
     const variants = await p.evaluate(() => { const c = {}; for (let i = 0; i < 400; i++) { const v = makeDungeon(2).variant; c[v] = (c[v] || 0) + 1; } return c; });
     check('mazmorras raras aparecen', variants.red > 0 && variants.double > 0 && variants.normal > variants.red, JSON.stringify(variants));
     await p.click('[data-tab=routines]');
+    await p.click('[data-fold=tests] > summary');
     await p.fill('#t_push', '55'); await p.click('[data-test=push]');
     const t = await p.okAll();
     check('prueba de fuerza desbloquea título por marca', t.some((m) => m.includes('Puño de Hierro')), t.join(' | '));
@@ -115,7 +116,10 @@ const yesterday = () => { const y = new Date(); y.setDate(y.getDate() - 1); retu
     for (let i = 0; i < 7; i++) await p.click('[data-secret]');
     await p.okAll(); await p.selectOption('#theme', 'varka'); await p.okAll();
     const tabs = await p.$$eval('#tabs button', (bs) => bs.filter((b) => !b.hidden).map((b) => b.textContent));
-    check('tema Favonius cambia pestañas y muestra Equipo', tabs.includes('Encargos') && tabs.includes('Equipo'), tabs.join(','));
+    check('5 pestañas y textos del tema Favonius', tabs.length === 5 && tabs.includes('Encargos') && tabs.includes('Orden'), tabs.join(','));
+    await p.click('[data-tab=inventory]');
+    const seg = await p.$$eval('.seg button', (bs) => bs.map((b) => b.textContent));
+    check('Inventario agrupa Equipo y Mercado en el tema Favonius', seg.join(',') === 'Inventario,Equipo,Mercado', seg.join(','));
     await p.click('[data-tab=quests]');
     for (const id of await p.$$eval('[data-comm]', (bs) => bs.map((b) => b.dataset.comm))) { await p.click(`[data-comm="${id}"]`); await p.okAll(); }
     check('4 encargos diarios completos', (await p.evaluate(() => S.comm.done.length)) === 4);
@@ -123,10 +127,14 @@ const yesterday = () => { const y = new Date(); y.setDate(y.getDate() - 1); retu
     await p.click('#wreqDone');
     const wr = await p.okAll();
     check('petición semanal completa suma amistad', wr.some((m) => m.includes('Amistad con')), wr.join(' | '));
-    await p.click('[data-tab=gear]'); await p.click('[data-wish="10"]'); await p.okAll();
+    await p.click('[data-tab=inventory]'); await p.click('[data-inv=gear]'); await p.click('[data-wish="10"]'); await p.okAll();
     check('deseo ×10 entrega 10 piezas', (await p.evaluate(() => Object.values(S.gear.inv).reduce((a, n) => a + n, 0))) >= 1);
     await p.click('[data-tab=routines]');
     check('requisitos del Gran Maestro visibles', !!(await p.$('#gmTrial')));
+    // Folded windows remember their state across renders
+    await p.click('[data-fold=other] > summary');
+    await p.click('[data-tab=status]'); await p.click('[data-tab=routines]');
+    check('ventana plegada recuerda si quedó abierta', await p.$eval('[data-fold=other]', (d) => d.open));
     check('sin errores (tema Favonius)', p.errors.length === 0, p.errors.join(' | '));
     await p.context().close();
   }

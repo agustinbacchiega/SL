@@ -42,6 +42,7 @@ document.addEventListener('click', (ev) => {
   if (d.ans) { evalDraft.answers[QUESTIONS[evalDraft.step].id] = d.ans; evalDraft.step++; render(); return; }
   if (d.rest) { rest = { end: Date.now() + d.rest * 1000, label: d.label }; tickTimers(); return; }
   if (d.routine) return completeRoutine(d.routine);
+  if (d.inv) { invTab = d.inv; render(); return; }
   if (d.guide) return startGuide(d.guide);
   if (d.gmstep) return gmStepDone(Number(d.gmstep));
   if (d.comm) return commissionDone(Number(d.comm));
@@ -213,6 +214,15 @@ function maybeRemind() {
     .catch(() => new Notification('[ADVERTENCIA]', { body }));
 }
 
+// Remember which folded windows are open; written straight to storage (no re-render).
+document.addEventListener('toggle', (ev) => {
+  const el = ev.target;
+  if (!el.dataset || !el.dataset.fold || el.closest('#peek')) return;
+  S.folds = S.folds || {};
+  S.folds[el.dataset.fold] = el.open;
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* ignore */ }
+}, true);
+
 /* ================= SWIPE BETWEEN TABS ================= */
 
 // The page follows the finger while the neighbour tab slides in beside it (a
@@ -222,7 +232,7 @@ let swipe = null;
 let suppressClickUntil = 0;
 
 const visibleTabs = () => [...document.querySelectorAll('#tabs button')].filter((b) => !b.hidden).map((b) => b.dataset.tab);
-const TAB_VIEWS = () => ({ status: viewStatus, quests: viewQuests, routines: viewRoutines, inventory: viewInventory, shop: viewShop, more: viewMore, gear: viewGear });
+const TAB_VIEWS = () => ({ status: viewStatus, quests: viewQuests, routines: viewRoutines, inventory: viewInventoryTab, more: viewMore });
 
 function peekEl() {
   let el = document.getElementById('peek');

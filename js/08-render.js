@@ -76,21 +76,41 @@ function render() {
   setHref('link[rel=manifest]', v ? 'manifest-varka.webmanifest' : 'manifest.webmanifest');
   setHref('link[rel=icon]', v ? 'icons/icon-varka.svg' : 'icons/icon.svg');
   setHref('link[rel=apple-touch-icon]', v ? 'icons/icon-varka-192.png' : 'icons/icon-192.png');
-  if (tab === 'gear' && S.theme !== 'varka') tab = 'status';
-  $('#tabs').classList.toggle('seven', S.theme === 'varka');
+  if (invTab === 'gear' && S.theme !== 'varka') invTab = 'items';
   document.querySelectorAll('#tabs button').forEach((b) => {
-    b.hidden = b.dataset.tab === 'gear' && S.theme !== 'varka';
     b.dataset.label = b.dataset.label || b.textContent;
     b.textContent = themed(b.dataset.label);
   });
   const app = $('#app');
+  // Keep folded windows as the user left them, even if a toggle event hasn't fired yet.
+  app.querySelectorAll('details[data-fold]').forEach((d) => { S.folds = S.folds || {}; S.folds[d.dataset.fold] = d.open; });
   if (!S.awakened) { $('#tabs').hidden = true; app.innerHTML = viewAwaken(); bindAwaken(); return; }
   if (!S.profile || evalDraft) { $('#tabs').hidden = true; app.innerHTML = themed(viewEval()); return; }
   if (guide) { $('#tabs').hidden = true; app.innerHTML = themed(viewGuide()); return; }
   $('#tabs').hidden = false;
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   decayFatigue();
-  app.innerHTML = themed({ status: viewStatus, quests: viewQuests, routines: viewRoutines, inventory: viewInventory, shop: viewShop, more: viewMore, gear: viewGear }[tab]());
+  app.innerHTML = themed({ status: viewStatus, quests: viewQuests, routines: viewRoutines, inventory: viewInventoryTab, more: viewMore }[tab]());
+}
+
+// Collapsible window: turns `<div class="win"><div class="win-title">T</div>…</div>` into a
+// <details> that shows the title plus a short summary. Open/closed is remembered per window.
+function fold(id, summary, html, def = false, force = false) {
+  const m = html.match(/^\s*<div class="win([^"]*)"([^>]*)><div class="win-title"([^>]*)>([\s\S]*?)<\/div>/);
+  if (!m) return html;
+  const saved = S.folds && id in S.folds ? S.folds[id] : def;
+  const rest = html.slice(m[0].length).replace(/<\/div>\s*$/, '');
+  return `<details class="win fold${m[1]}"${m[2]} data-fold="${id}" ${force || saved ? 'open' : ''}>
+    <summary><span class="win-title"${m[3]}>${m[4]}</span>${summary ? `<span class="fold-sum">${summary}</span>` : ''}</summary>${rest}</details>`;
+}
+
+let invTab = 'items';
+
+function viewInventoryTab() {
+  const v = S.theme === 'varka';
+  const opts = [['items', 'Inventario'], ...(v ? [['gear', 'Equipo']] : []), ['shop', 'Tienda']];
+  const seg = `<div class="seg">${opts.map(([k, l]) => `<button data-inv="${k}" class="${invTab === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+  return seg + (invTab === 'shop' ? viewShop() : invTab === 'gear' ? viewGear() : viewInventory());
 }
 
 function viewAwaken() {
@@ -355,9 +375,9 @@ function viewStatus() {
   <button class="btn block" id="card" style="margin:-4px 0 16px">🪪 Tarjeta de cazador</button>
   ${viewConstellation()}
   ${viewCalendar()}
-  ${viewProgress()}
-  ${viewProfile()}
-  <div class="win"><div class="win-title">Habilidades</div>
+  ${fold('progress', 'Constancia, peso y récords', viewProgress())}
+  ${S.profile ? fold('body', `${S.weights.length ? S.weights[S.weights.length - 1].kg : S.profile.answers.weight} kg · meta ${S.profile.answers.goalWeight} kg`, viewProfile()) : ''}
+  ${fold('skills', `${(S.equipped || []).length} de ${maxSlots()} equipadas`, `<div class="win"><div class="win-title">Habilidades</div>
     <p class="muted center" style="margin-top:0;font-size:14px">Ranuras equipadas: <b>${(S.equipped || []).length} / ${maxSlots()}</b>
       ${S.level < 25 ? '<br>Nivel 25: +1 ranura' : ''}${S.job === 'Ninguno' ? '<br>Cambio de clase: +1 ranura' : ''}</p>
     ${SKILLS.map((s, i) => {
@@ -368,7 +388,7 @@ function viewStatus() {
         <div class="desc">${has ? s.desc : (s.job ? 'Requiere cambio de clase.' : `Se desbloquea en nivel ${s.lv}.`)}</div></div>
         ${has && !s.job ? `<button class="btn small" data-skill="${i}" ${!eq && S.equipped.length >= maxSlots() ? 'disabled' : ''}>${eq ? 'Quitar' : 'Equipar'}</button>` : ''}</div>`;
     }).join('')}
-  </div>`;
+  </div>`)}`;
 }
 
 function viewQuests() {
@@ -482,8 +502,8 @@ function viewInventory() {
       <button class="btn small" data-use="${id}">${id === 'box' ? 'Abrir' : 'Usar'}</button></div>`).join('')
       : '<p class="muted center">Vacío.</p>'}
   </div>
-  ${viewAchievements()}
-  <div class="win"><div class="win-title">Títulos</div>
+  ${fold('ach', `${Object.values(S.ach || {}).reduce((a, n) => a + n, 0)} de ${ACHIEVEMENTS.reduce((a, x) => a + x[3].length, 0)}`, viewAchievements())}
+  ${fold('titles', `${S.titles.length} desbloqueado${S.titles.length === 1 ? '' : 's'}`, `<div class="win"><div class="win-title">Títulos</div>
     ${Object.entries(TITLES).map(([id, t]) => {
       const has = S.titles.includes(id);
       return `<div class="item" style="${has ? '' : 'opacity:.6'}"><div class="info">
@@ -491,7 +511,7 @@ function viewInventory() {
         <div class="desc">${has ? `${t.desc}<br>Efecto: ${t.bonus}` : t.secret ? 'Misión secreta.' : `Requisito: ${t.desc}<br>Efecto: ${t.bonus}`}</div></div>
         ${has ? `<button class="btn small" data-title="${id}">${S.title === id ? 'Quitar' : 'Equipar'}</button>` : ''}</div>`;
     }).join('')}
-  </div>`;
+  </div>`)}`;
 }
 
 function viewShop() {
@@ -509,7 +529,7 @@ function viewMore() {
     <div class="grid2">${Object.entries(EXERCISES).map(([k, e]) => `<label>${e.name}${e.unit ? ` (${e.unit})` : ''}
       <input type="number" min="0" step="${k === 'run' ? 0.5 : 1}" data-target="${k}" value="${S.targets[k]}"></label>`).join('')}</div>
   </div>
-  <div class="win"><div class="win-title">Zona de Castigo</div>
+  ${fold('penaltycfg', `${S.block.hours} h · ${BLOCK_MODES[S.block.mode]}`, `<div class="win"><div class="win-title">Zona de Castigo</div>
     <label>Ejercicio de castigo<input id="ptask" value="${esc(S.penaltyTask)}"></label>
     <div class="grid2" style="margin-top:8px">
       <label>Duración<select id="bhours">${[1, 2, 4, 8, 12, 24].map((h) => `<option value="${h}" ${S.block.hours === h ? 'selected' : ''}>${h} h${h === 4 ? ' (canon)' : ''}</option>`).join('')}</select></label>
@@ -525,7 +545,7 @@ function viewMore() {
         <li>Acciones: <i>Obtener archivo</i> SL/castigo.txt → <i>Obtener fechas</i> → <i>Si</i> la fecha actual es anterior → <i>Mostrar notificación</i> "Estás en la Zona de Castigo" → <i>Ir a pantalla de inicio</i>.</li>
       </ol><p class="muted" style="font-size:14px">Cuando la app castiga, te pide activar el bloqueo y le pasa al atajo la hora de fin. Pasado ese tiempo, las apps se abren normal solas.</p>`}
     </details>
-  </div>
+  </div>`)}
   <div class="win"><div class="win-title">Nueva Misión Secundaria</div>
     <input id="sqName" placeholder="Ej: Meditar 10 minutos" maxlength="40">
     <div class="grid2" style="margin-top:8px">
@@ -535,7 +555,7 @@ function viewMore() {
     <button class="btn block" id="sqAdd">Agregar</button>
     ${S.side.map((q) => `<div class="goal"><span class="name">${esc(q.name)}</span><button class="btn small danger" data-del="${q.id}">✕</button></div>`).join('')}
   </div>
-  ${viewPause()}
+  ${fold('pause', S.pause && pausedOn(today()) ? 'Activo' : `${PAUSE_PER_MONTH - pauseUsed()} días disponibles`, viewPause(), false, !!(S.pause && pausedOn(today())))}
   <div class="win"><div class="win-title" data-secret>Sistema</div>
     ${S.themeUnlocked ? `<div class="row" style="margin-bottom:8px"><span>Tema</span>
       <select id="theme" style="width:auto"><option value="sl" ${S.theme === 'sl' ? 'selected' : ''}>Solo Leveling</option>

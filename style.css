@@ -211,3 +211,17 @@ body { overflow-x: hidden; }
 .cons-map text { fill: var(--muted); font: 11px var(--font); }
 .c6-name { color: var(--gold); text-shadow: 0 0 10px var(--gold); font-weight: 700; }
 .cal-d.shielded { border-color: var(--gold); }
+
+/* Folded windows and inventory selector */
+details.fold > summary { list-style: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary .win-title { margin-bottom: 0; }
+details.fold[open] > summary .win-title { margin-bottom: 4px; }
+details.fold > summary .fold-sum { font-size: 13px; color: var(--muted); }
+details.fold > summary .fold-sum::after { content: "  ▸"; }
+details.fold[open] > summary .fold-sum::after { content: "  ▾"; }
+details.fold:not([open]) { padding-bottom: 10px; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 0 8px var(--glow); }
+.seg button { flex: 1; background: none; border: 0; padding: 10px 4px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.seg button.on { background: rgba(63, 182, 255, .18); color: var(--accent); text-shadow: 0 0 8px var(--glow); }
+.seg button + button { border-left: 1px solid var(--line); }

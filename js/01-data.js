@@ -381,15 +381,15 @@ function viewRoutines() {
     ${todayId ? routineCard(todayId, true) : `<p class="center">Hoy es día de descanso.<br><span class="muted">La misión diaria sigue activa. Si querés moverte, hacé <b>${ALL_ROUTINES()[RSET().rest].name}</b>.</span></p>`}
     <p class="center timer" id="rest" style="min-height:1.2em">${rest ? `${rest.label || 'Descanso'}: ${Math.ceil((rest.end - Date.now()) / 1000)} s` : ''}</p>
   </div>
-  <div class="win"><div class="win-title">Recomendadas</div>
+  ${fold('rec', 'Para tu objetivo', `<div class="win"><div class="win-title">Recomendadas</div>
     ${rec.filter((id) => id !== todayId).map((id) => routineCard(id)).join('')}
     ${todayId !== RSET().rest ? routineCard(RSET().rest) : ''}
-  </div>
-  ${viewTests()}
-  ${viewReeval()}
-  <div class="win"><div class="win-title">Otras Rutinas</div>
+  </div>`)}
+  ${fold('tests', 'Récords y títulos por marca', viewTests())}
+  ${fold('reeval', S.reeval ? `Último: ${gradeName(S.reeval.grade)}` : 'Una vez por mes', viewReeval())}
+  ${fold('other', 'El resto de la biblioteca', `<div class="win"><div class="win-title">Otras Rutinas</div>
     ${Object.keys(RSET().lib).filter((id) => !rec.includes(id) && id !== RSET().rest && id !== todayId).map((id) => routineCard(id)).join('')}
-  </div>`;
+  </div>`)}`;
 }
 
 // Hidden theme: Knights of Favonius (Varka, Genshin Impact). Pure text/color reskin;
