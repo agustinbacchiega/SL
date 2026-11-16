@@ -31,6 +31,7 @@ const ITEMS = {
   fat: { ico: '💧', name: 'Poción de Recuperación de Fatiga', desc: 'Reduce la fatiga a 0.', price: 200 },
   key: { ico: '🗝️', name: 'Llave de Mazmorra Instantánea', desc: 'Abre una mazmorra: un desafío extra con gran recompensa.', price: 600 },
   stone: { ico: '💠', name: 'Piedra Rúnica: Bonus', desc: 'Otorga 1 punto de habilidad.', price: 1500 },
+  capsule: { ico: '🧠', name: 'Cápsula de Conocimiento', desc: 'De la tienda de Dori: tu próxima sesión de estudio da el doble de créditos y XP.', price: 300, varka: true },
 };
 
 const ITEM_ICO_VARKA = { box: '🎁', hp: '🍗', mp: '🍎', fat: '🍵', key: '🗝️', stone: '📜' };
@@ -59,6 +60,13 @@ const TITLES = {
   gm: { name: 'Discípulo del Gran Maestro', desc: 'Superar la Prueba del Gran Maestro (tema Caballeros de Favonius).', bonus: 'Toda la XP +10%' },
   season: { name: 'Campeón de Temporada', desc: 'Completar los 30 niveles de un pase de temporada.', bonus: 'Toda la XP +5%' },
   wind: { name: 'Pies de Viento', desc: 'Prueba de fuerza: 1 km en menos de 4:30.', bonus: 'XP de pruebas de fuerza +25%' },
+  thesis: { name: 'Autor de Tesis', desc: 'Defender una tesis en la Akademiya (tema Caballeros de Favonius).', bonus: 'XP de estudio +10%' },
+  escriba: { name: 'Escriba de la Akademiya', desc: 'Llegar a Sabio en el Darshan Haravatat.', bonus: 'XP de estudio +15%' },
+  luz: { name: 'Luz de Kshahrewar', desc: 'Llegar a Sabio en el Darshan Kshahrewar.', bonus: 'XP de estudio +15%' },
+  guardabosques: { name: 'Guardabosques Erudito', desc: 'Llegar a Sabio en el Darshan Amurta.', bonus: 'XP de estudio +15%' },
+  estrellas: { name: 'Observador de Estrellas', desc: 'Llegar a Sabio en el Darshan Rtawahist.', bonus: 'XP de estudio +15%' },
+  rosa: { name: 'Rosa Púrpura de la Akademiya', desc: 'Llegar a Sabio en el Darshan Spantamad.', bonus: 'XP de estudio +15%' },
+  testigo: { name: 'Testigo de la Historia', desc: 'Llegar a Sabio en el Darshan Vahumana.', bonus: 'XP de estudio +15%' },
   monarch: { name: 'Monarca de las Sombras', desc: 'Alcanzaste el nivel 100.', bonus: 'Toda la XP +25%' },
 };
 
@@ -372,7 +380,7 @@ function viewRoutines() {
   const todayId = plan[ti];
   const rec = recommended();
   const a = S.profile.answers;
-  return `${viewGM()}<div class="win"><div class="win-title">Plan Semanal</div>
+  return viewRoutinesTabs(`${viewGM()}<div class="win"><div class="win-title">Plan Semanal</div>
     <p class="center muted" style="margin-top:0;font-size:15px">Objetivo: <b>${GOALS[a.goal]}</b> · ${TRAIN_DAYS[+a.activity].length} días de entrenamiento${a.injury !== 'none' ? ' · ejercicios adaptados a tu lesión' : ''}</p>
     ${plan.map((id, i) => `<div class="row" style="padding:5px 8px;${i === ti ? 'border:1px solid var(--line);border-radius:4px;box-shadow:0 0 8px var(--glow)' : ''}">
       <span class="label">${DAYS[i]}</span><span>${id ? ALL_ROUTINES()[id].name : '<span class="muted">Descanso</span>'}${id && routineDone(id) ? ' ✔' : ''}</span></div>`).join('')}
@@ -389,7 +397,7 @@ function viewRoutines() {
   ${fold('reeval', S.reeval ? `Último: ${gradeName(S.reeval.grade)}` : 'Una vez por mes', viewReeval())}
   ${fold('other', 'El resto de la biblioteca', `<div class="win"><div class="win-title">Otras Rutinas</div>
     ${Object.keys(RSET().lib).filter((id) => !rec.includes(id) && id !== RSET().rest && id !== todayId).map((id) => routineCard(id)).join('')}
-  </div>`)}`;
+  </div>`)}`);
 }
 
 // Hidden theme: Knights of Favonius (Varka, Genshin Impact). Pure text/color reskin;

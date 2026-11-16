@@ -289,7 +289,9 @@ function saveJournal(el, final) {
   // XP only for today's entry, once, when the user finishes writing (on blur).
   if (final && d === today() && j.text.trim().length >= 10 && !j.xp) {
     j.xp = true;
-    const xp = gainXP(15);
+    const harav = akaOn() && S.aka && S.aka.darshan === 'haravatat';
+    const xp = gainXP(harav ? 30 : 15);
+    if (harav) addCredits(10);
     gainProto(5);
     hitBoss('journal');
     notify('Diario', `Entrada del diario guardada.\n\nXP +${xp}`);
@@ -311,6 +313,9 @@ function viewDay(d) {
   if (L.secret) rows.push('★ Misión secreta: Superar los límites');
   (L.routines || []).forEach((id) => rows.push(`• Rutina: ${ALL_ROUTINES()[id] ? ALL_ROUTINES()[id].name : id}`));
   (L.side || []).forEach((n) => rows.push(`◆ ${esc(n)}`));
+  if (L.study) rows.push(`📚 Estudio: ${L.study} min`);
+  if (L.seminar) rows.push(`🎓 Seminario: ${esc(L.seminar)}`);
+  if (L.thesis) rows.push(`📜 Tesis defendida: ${esc(L.thesis)}`);
   if (L.boss) rows.push(`👑 Jefe semanal derrotado: ${L.boss}`);
   if (L.dungeon) rows.push(`⚔ Mazmorra despejada: ${L.dungeon}`);
   if (L.penalty) rows.push(L.survived ? '☠ Zona de Castigo: sobreviviste' : '☠ Zona de Castigo');
@@ -517,7 +522,7 @@ function viewInventory() {
 function viewShop() {
   return `<div class="win"><div class="win-title">Tienda</div>
     <div class="row" style="margin-bottom:8px"><span class="label">Oro disponible</span><b class="gold">${S.gold.toLocaleString('es')}</b></div>
-    ${Object.entries(ITEMS).map(([id, it]) => `<div class="item"><div class="ico">${itemIco(id)}</div>
+    ${Object.entries(ITEMS).filter(([, it]) => !it.varka || S.theme === 'varka').map(([id, it]) => `<div class="item"><div class="ico">${itemIco(id)}</div>
       <div class="info"><b>${it.name}</b><div class="desc">${it.desc}</div></div>
       <button class="btn small" data-buy="${id}" ${S.gold < priceOf(id) ? 'disabled' : ''}>${priceOf(id) < it.price ? `<s style="opacity:.6">${it.price}</s> ` : ''}${priceOf(id)} ${coin()}</button></div>`).join('')}
   </div>`;

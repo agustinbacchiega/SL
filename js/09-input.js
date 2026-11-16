@@ -43,6 +43,9 @@ document.addEventListener('click', (ev) => {
   if (d.rest) { rest = { end: Date.now() + d.rest * 1000, label: d.label }; tickTimers(); return; }
   if (d.routine) return completeRoutine(d.routine);
   if (d.inv) { invTab = d.inv; render(); return; }
+  if (d.rtab) { routTab = d.rtab; render(); return; }
+  if (d.darshan) return enroll(d.darshan);
+  if (d.thstep) return thesisStep(Number(d.thstep));
   if (d.guide) return startGuide(d.guide);
   if (d.gmstep) return gmStepDone(Number(d.gmstep));
   if (d.comm) return commissionDone(Number(d.comm));
@@ -95,6 +98,12 @@ document.addEventListener('click', (ev) => {
     case 'claim': return claimDaily();
     case 'survive': return clearPenalty();
     case 'emgDone': return completeEmergency();
+    case 'studyPomo': return startStudy('pomo');
+    case 'studyFree': return startStudy('free');
+    case 'studyStop': return stopStudy();
+    case 'semDone': return completeSeminar();
+    case 'thPropose': return proposeThesis();
+    case 'thDefend': return defendThesis();
     case 'wreqDone': return completeWeeklyRequest();
     case 'wreqReroll': return rerollWeeklyRequest();
     case 'pauseStart':
@@ -159,6 +168,7 @@ document.addEventListener('change', (ev) => {
     const v = Math.max(el.dataset.target === 'run' ? 0.5 : 1, Number(el.value) || 0);
     S.targets[el.dataset.target] = v; save();
   }
+  if (el.id === 'studyGoal') { aka().goal = Number(el.value); save(); render(); return; }
   if (el.id === 'pauseDays') { pauseSel = Number(el.value); render(); return; }
   if (el.id === 'theme') {
     S.theme = el.value; save(); render();

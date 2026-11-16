@@ -9,13 +9,15 @@ ensureBoss();
 ensureSince();
 checkDeloadNotice();
 gmCheckTrial();
+akaChecks();
 render();
 setInterval(() => {
-  if (rollover()) { rollEvent(); ensureBoss(); checkDeloadNotice(); gmCheckTrial(); render(); }
+  if (rollover()) { rollEvent(); ensureBoss(); checkDeloadNotice(); gmCheckTrial(); akaChecks(); render(); }
   maybeRemind();
   const t = $('#timer');
   if (t) t.textContent = timeLeft();
   tickTimers();
+  akaTick();
 }, 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { rollover(); render(); } });
 

@@ -44,6 +44,8 @@ const REAL_GAINS = [
   ['km', 'agi', 'Km corridos', (t) => t.run, 25],
   ['journal', 'int', 'Entradas de diario', () => Object.values(S.journal || {}).filter((j) => j.text).length, 10],
   ['pr', 'per', 'Récords personales', () => S.prs || 0, 5],
+  ['study', 'int', 'Horas de estudio', () => (S.aka ? S.aka.mins / 60 : 0), 10, 'varka'],
+  ['thesisper', 'per', 'Tesis defendidas', () => (S.aka ? S.aka.theses || 0 : 0), 1, 'varka'],
 ];
 
 function checkRealStats() {
@@ -183,7 +185,8 @@ function viewProgress() {
     <div class="label" style="margin-top:12px">Peso (kg)</div>${lineChart(weights, { goal: S.profile ? +S.profile.answers.goalWeight : null })}
     ${testCharts || '<p class="muted" style="font-size:14px;margin-top:12px">Hacé las pruebas de fuerza más de una vez para ver cómo mejoran tus récords.</p>'}
     <hr><div class="label">Entrenamiento acumulado</div>
-    ${REAL_GAINS.map(([id, stat, label, fn, every]) => {
+    ${S.theme === 'varka' && S.aka && S.aka.mins ? `<div class="label" style="margin-top:12px">Horas de estudio por semana</div>${studyWeeksChart()}` : ''}
+    ${REAL_GAINS.filter((g) => !g[5] || S.theme === 'varka').map(([id, stat, label, fn, every]) => {
       const v = fn(t), next = (Math.floor(v / every) + 1) * every;
       return `<div class="row" style="padding:3px 0;font-size:15px"><span>${label}: <b>${(Math.round(v * 10) / 10).toLocaleString('es')}</b></span>
         <span class="muted">${STATS[stat][1]} +1 en ${(Math.round((next - v) * 10) / 10).toLocaleString('es')}</span></div>`;

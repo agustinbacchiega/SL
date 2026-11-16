@@ -135,6 +135,24 @@ const yesterday = () => { const y = new Date(); y.setDate(y.getDate() - 1); retu
     await p.click('[data-fold=other] > summary');
     await p.click('[data-tab=status]'); await p.click('[data-tab=routines]');
     check('ventana plegada recuerda si quedó abierta', await p.$eval('[data-fold=other]', (d) => d.open));
+    // Akademiya (study pillar)
+    await p.click('[data-rtab=study]');
+    await p.click('[data-darshan=kshahrewar]'); await p.okAll();
+    await p.click('#studyFree');
+    await p.evaluate(() => { studySession.start -= 31 * 60e3; });
+    await p.click('#studyStop');
+    const st = await p.okAll();
+    check('sesión de estudio registra minutos y cumple la meta', st.some((m) => m.includes('31 min')) && st.some((m) => m.includes('Meta de estudio')), st.join(' | '));
+    await p.click('#semDone'); await p.okAll();
+    check('seminario semanal se completa', await p.evaluate(() => S.aka.sem.done));
+    await p.fill('#thTopic', 'Diseño de una biblioteca solar');
+    await p.click('#thPropose'); await p.okAll();
+    for (let i = 0; i < 4; i++) { await p.click(`[data-thstep="${i}"]`); await p.okAll(); }
+    await p.fill('#thSummary', 'Aprendí cómo orientar ventanas para aprovechar la luz natural y reducir el consumo de energía en edificios públicos.');
+    await p.click('#thDefend');
+    const th = await p.okAll();
+    check('defensa de tesis da título', th.some((m) => m.includes('Autor de Tesis')), th.join(' | '));
+    check('calendario registra el estudio', await p.evaluate(() => (S.log[today()] || {}).study === 31));
     check('sin errores (tema Favonius)', p.errors.length === 0, p.errors.join(' | '));
     await p.context().close();
   }

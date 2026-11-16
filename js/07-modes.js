@@ -239,7 +239,7 @@ function commissionDone(i) {
   if (S.comm.done.includes(i)) return;
   S.comm.done.push(i);
   gainProto(10);
-  const xp = gainXP(15);
+  const xp = gainXP(akaOn() && S.aka && S.aka.darshan === 'amurta' ? 23 : 15);
   hitBoss('commission');
   let msg = `[${COMMISSIONS[i][0]}]\n\n"¡Gracias, caballero!" — ${COMMISSIONS[i][1]}\n\nXP +${xp}`;
   if (S.comm.done.length === 4 && !S.comm.bonus) {
@@ -266,7 +266,7 @@ function viewCommissions() {
 /* ================= SEASONS ================= */
 
 const SEASON_LEVELS = 30, SEASON_STEP = 120;
-const SEASON_PTS = { daily: 100, routine: 60, dungeon: 80, secret: 50, emergency: 50, test: 40, side: 20, journal: 20, commission: 15, boss: 150 };
+const SEASON_PTS = { study: 40, daily: 100, routine: 60, dungeon: 80, secret: 50, emergency: 50, test: 40, side: 20, journal: 20, commission: 15, boss: 150 };
 const SEASON_NAMES = ['del Despertar', 'de la Puerta Roja', 'del Castillo del Demonio', 'de las Hormigas de Jeju', 'del Monarca', 'de los Cazadores',
   'de la Mazmorra Doble', 'de los Gremios', 'de las Sombras', 'del Rango S', 'de la Reevaluación', 'del Nivel Nacional'];
 const SEASON_NAMES_VARKA = ['del Viento del Oeste', 'del Bosque Susurrante', 'del Espinadragón', 'de la Expedición', 'del Cabo del Juramento', 'del Lobo del Norte',

@@ -106,6 +106,7 @@ function recordTest(id) {
   if (hasSkill('Intención Asesina')) base *= 2;
   const xp = base ? gainXP(base, 'test') : 0;
   if (pr) S.prs = (S.prs || 0) + 1;
+  if (akaOn() && S.aka && S.aka.darshan === 'spantamad') addCredits(30);
   if (base) hitBoss('test');
   if (pr) gainProto(10);
   dayLog().tests = [...(dayLog().tests || []), `${T.name}: ${fmtTest(id, v)}`];
@@ -192,7 +193,7 @@ const WEEKLY_BOSSES = ['Igris, el Caballero Sangriento', 'Tusk, el Alto Orco', '
 const WEEKLY_BOSSES_VARKA = ['Stormterror Dvalin', 'Andrius, Señor de los Lobos', 'Tartaglia, el Undécimo Heraldo', 'Azhdaha',
   'La Signora', 'Marioneta de la Shogun'];
 // Damage per activity; HP scales with planned training days so a normal week can win.
-const BOSS_DMG = { daily: 100, routine: 60, dungeon: 80, secret: 50, emergency: 50, test: 40, side: 20, journal: 10 };
+const BOSS_DMG = { study: 40, daily: 100, routine: 60, dungeon: 80, secret: 50, emergency: 50, test: 40, side: 20, journal: 10 };
 
 function weekStart(d = new Date()) {
   const x = new Date(d);
@@ -248,7 +249,7 @@ function hitBoss(kind) {
   notify('Jefe Semanal', `¡Has derrotado a <b>${bossName()}</b>!\n\nRecompensas:\n• XP +${xp}\n• Oro +${g}\n• Caja Aleatoria ×1\n• Llave de Mazmorra ×1\n\nUn nuevo jefe aparecerá el lunes.`);
 }
 
-const HIT_LABEL = { commission: 'Encargo', daily: 'Misión diaria', routine: 'Rutina', dungeon: 'Mazmorra', secret: 'Misión secreta', emergency: 'Emergencia', test: 'Prueba de fuerza', side: 'Misión secundaria', journal: 'Diario' };
+const HIT_LABEL = { study: 'Estudio', commission: 'Encargo', daily: 'Misión diaria', routine: 'Rutina', dungeon: 'Mazmorra', secret: 'Misión secreta', emergency: 'Emergencia', test: 'Prueba de fuerza', side: 'Misión secundaria', journal: 'Diario' };
 
 function viewBoss() {
   ensureBoss();

@@ -72,6 +72,8 @@ function gainXP(base, source) {
   if (titleIs('legend')) mult += 0.2;
   if (titleIs('srank')) mult += 0.1;
   if (titleIs('season')) mult += 0.05;
+  if (source === 'study' && titleIs('thesis')) mult += 0.1;
+  if (source === 'study' && ['escriba', 'luz', 'guardabosques', 'estrellas', 'rosa', 'testigo'].includes(S.title)) mult += 0.15;
   if (source === 'daily' && cons() >= 1) mult += 0.15;
   if (cons() >= 6) mult += 0.1;
   if (titleIs('gm')) mult += 0.1;
@@ -282,6 +284,7 @@ function useItem(id) {
   else if (id === 'mp') { S.mp = maxMP(); notify('Notificación', 'MP restaurado por completo.'); }
   else if (id === 'fat') { S.fatigue = 0; notify('Notificación', 'Fatiga: 0'); }
   else if (id === 'stone') { S.ap += 1; notify('Notificación', 'Puntos de habilidad +1'); }
+  else if (id === 'capsule') { aka().capsule = true; notify('Akademiya', 'Cápsula de Conocimiento activada.\nTu próxima sesión de estudio rinde el doble.'); }
   else if (id === 'key') {
     if (S.daily.dungeon) { addItem('key'); notify('Notificación', 'Ya hay una mazmorra abierta hoy.'); }
     else {
