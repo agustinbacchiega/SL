@@ -158,6 +158,7 @@ document.addEventListener('change', (ev) => {
     const v = Math.max(el.dataset.target === 'run' ? 0.5 : 1, Number(el.value) || 0);
     S.targets[el.dataset.target] = v; save();
   }
+  if (el.id === 'pauseDays') { pauseSel = Number(el.value); render(); return; }
   if (el.id === 'theme') {
     S.theme = el.value; save(); render();
     if (S.theme === 'varka') notify('Notificación', 'Bienvenido a los Caballeros de Favonius.\n\nEl Gran Maestro Varka sigue de expedición, pero dejó su régimen de entrenamiento para los caballeros de Mondstadt.\n\n¡Que el viento te acompañe!');

@@ -170,7 +170,7 @@ function startPause(days, reason) {
   S.pause = { from, to: today(end), reason };
   S.pauseDays = S.pauseDays || [];
   for (let i = 0; i < days; i++) { const d = new Date(); d.setDate(d.getDate() + i); pushUnique(S.pauseDays, today(d)); }
-  notify('Notificación', `Modo pausa activado hasta el ${shortDate(S.pause.to)}.\n\nNo habrá castigos y tu racha queda congelada.\n\nRecuperate bien.`);
+  notify('Notificación', `Modo pausa activado.\n\n${pauseCover(S.pause.from, S.pause.to)}\n\nNo habrá castigos y tu racha queda congelada.\n\nRecuperate bien.`);
   save(); render();
 }
 
@@ -184,15 +184,27 @@ function endPause() {
   save(); render();
 }
 
+// "Cubre la misión diaria de hoy (16/11)" / "…del 16/11 al 18/11, inclusive".
+function pauseCover(from, to) {
+  const lbl = (d) => `${d === today() ? 'hoy ' : ''}${shortDate(d)}`;
+  return from === to ? `Cubre la misión diaria de <b>${lbl(from)}</b>.` : `Cubre las misiones diarias desde <b>${lbl(from)}</b> hasta el <b>${shortDate(to)}</b>, inclusive.`;
+}
+const dayAfter = (d) => { const x = new Date(d + 'T12:00'); x.setDate(x.getDate() + 1); return today(x); };
+const pauseEndFor = (days) => { const d = new Date(); d.setDate(d.getDate() + days - 1); return today(d); };
+let pauseSel = 1;
+
 function viewPause() {
   const on = S.pause && pausedOn(today());
   const left = PAUSE_PER_MONTH - pauseUsed();
   return `<div class="win"><div class="win-title">Modo Pausa</div>
-    ${on ? `<p class="center" style="margin-top:0">En pausa hasta el <b>${shortDate(S.pause.to)}</b><br><span class="muted">${PAUSE_REASONS[S.pause.reason]}</span></p>
+    ${on ? `<p class="center" style="margin-top:0">${pauseCover(S.pause.from, S.pause.to)}<br><span class="muted">${PAUSE_REASONS[S.pause.reason]}</span></p>
+      <p class="center muted" style="font-size:13px;margin:0 0 6px">La misión diaria del ${shortDate(dayAfter(S.pause.to))} vuelve a contar.</p>
       <button class="btn block" id="pauseEnd">Terminar pausa</button>`
     : `<p class="muted" style="margin-top:0;font-size:14px">Si estás enfermo, lesionado o de viaje: sin castigos y con la racha congelada. Te quedan <b>${left}</b> de ${PAUSE_PER_MONTH} días este mes.</p>
-      <div class="grid2"><select id="pauseDays">${Array.from({ length: Math.max(1, left) }, (_, i) => `<option value="${i + 1}">${i + 1} día${i ? 's' : ''}</option>`).join('')}</select>
+      <div class="grid2"><select id="pauseDays">${Array.from({ length: Math.max(1, left) }, (_, i) => `<option value="${i + 1}" ${pauseSel === i + 1 ? 'selected' : ''}>${i + 1} día${i ? 's' : ''}</option>`).join('')}</select>
         <select id="pauseReason">${Object.entries(PAUSE_REASONS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div>
+      <p class="center" style="font-size:14px;margin:8px 0 0">${pauseCover(today(), pauseEndFor(Math.min(pauseSel, Math.max(1, left))))}</p>
+      ${new Date().getHours() >= 20 ? '<p class="center muted" style="font-size:13px;margin:2px 0 0">Ojo: hoy ya casi termina. Si es por mañana, elegí 2 días.</p>' : ''}
       <button class="btn block" id="pauseStart" ${left < 1 || S.penalty ? 'disabled' : ''}>${S.penalty ? 'No disponible durante un castigo' : 'Activar pausa'}</button>`}
   </div>`;
 }
