@@ -65,7 +65,10 @@ function render() {
   document.body.classList.toggle('penalty', !!S.penalty);
   document.body.classList.toggle('varka', S.theme === 'varka');
   document.body.classList.toggle('gm', gmOn());
-  const rootBg = S.penalty ? '#120205' : S.theme === 'varka' ? '#06110f' : '#050a14';
+  // Sumeru palette only while looking at the Akademiya (Rutinas → Estudio).
+  const sumeru = S.theme === 'varka' && tab === 'routines' && routTab === 'study';
+  document.body.classList.toggle('sumeru', sumeru);
+  const rootBg = S.penalty ? '#120205' : sumeru ? '#0b1408' : S.theme === 'varka' ? '#06110f' : '#050a14';
   document.documentElement.style.backgroundColor = rootBg;
   const meta = document.querySelector('meta[name=theme-color]');
   if (meta) meta.setAttribute('content', rootBg);

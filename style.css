@@ -225,3 +225,12 @@ details.fold:not([open]) { padding-bottom: 10px; }
 .seg button { flex: 1; background: none; border: 0; padding: 10px 4px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
 .seg button.on { background: rgba(63, 182, 255, .18); color: var(--accent); text-shadow: 0 0 8px var(--glow); }
 .seg button + button { border-left: 1px solid var(--line); }
+
+/* Sumeru tint: only on Rutinas → Estudio in the Favonius theme (Dendro green + Sumeru gold) */
+body.varka.sumeru:not(.penalty) { --line: #8fcf5a; --glow: rgba(143, 207, 90, 0.42); --accent: #e2f4b6; --gold: #f0c25c; --panel: rgba(18, 30, 14, 0.88); --muted: #a3b892;
+  background: radial-gradient(ellipse at top, #24391a 0%, #0b1408 62%) fixed; }
+body.varka.sumeru:not(.penalty) .bar > i { background: linear-gradient(90deg, #4f8f2c, #e2f4b6); }
+body.varka.sumeru:not(.penalty) #tabs { background: rgba(11, 20, 8, 0.96); }
+body.varka.sumeru:not(.penalty) .seg button.on { background: rgba(143, 207, 90, .18); }
+body.varka.sumeru:not(.penalty) input, body.varka.sumeru:not(.penalty) select, body.varka.sumeru:not(.penalty) textarea { background: #142410; }
+body.varka.sumeru:not(.penalty) .bar { background: #142410; border-color: rgba(143, 207, 90, .4); }
