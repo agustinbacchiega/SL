@@ -510,7 +510,7 @@ function viewInventory() {
       <button class="btn small" data-use="${id}">${id === 'box' ? 'Abrir' : 'Usar'}</button></div>`).join('')
       : '<p class="muted center">Vacío.</p>'}
   </div>
-  ${fold('ach', `${Object.values(S.ach || {}).reduce((a, n) => a + n, 0)} de ${ACHIEVEMENTS.reduce((a, x) => a + x[3].length, 0)}`, viewAchievements())}
+  ${fold('ach', `${Object.values(S.ach || {}).reduce((a, n) => a + n, 0)} de ${visibleAch().reduce((a, x) => a + x[3].length, 0)}`, viewAchievements())}
   ${fold('titles', `${S.titles.length} desbloqueado${S.titles.length === 1 ? '' : 's'}`, `<div class="win"><div class="win-title">Títulos</div>
     ${Object.entries(TITLES).map(([id, t]) => {
       const has = S.titles.includes(id);

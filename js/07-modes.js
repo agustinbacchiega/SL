@@ -22,6 +22,7 @@ function gmReqs() {
     ['Rutinas completadas', routines, 6],
     ['Entradas de la bitácora', journal, 5],
     ['Jefe semanal derrotado', boss, 1],
+    ...(S.aka && S.aka.darshan ? [['Minutos de estudio en la Akademiya', days.reduce((a, d) => a + (L(d).study || 0), 0), 180]] : []),
   ];
 }
 const gmReady = () => gmReqs().every(([, have, need]) => have >= need) && !S.penalty;

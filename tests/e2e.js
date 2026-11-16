@@ -153,6 +153,14 @@ const yesterday = () => { const y = new Date(); y.setDate(y.getDate() - 1); retu
     const th = await p.okAll();
     check('defensa de tesis da título', th.some((m) => m.includes('Autor de Tesis')), th.join(' | '));
     check('calendario registra el estudio', await p.evaluate(() => (S.log[today()] || {}).study === 31));
+    await p.click('#nahidaRead'); await p.okAll();
+    check('carta semanal de Nahida da créditos una vez', await p.evaluate(() => S.aka.nahida === weekStart()));
+    const cr = await p.evaluate(() => S.aka.credits);
+    await p.click('[data-fold=dori] > summary');
+    await p.click('[data-cbuy=capsule]'); await p.okAll();
+    check('tienda de Dori cobra créditos', (await p.evaluate(() => S.aka.credits)) === cr - 80 && (await p.evaluate(() => S.inventory.capsule)) === 1);
+    check('archivo guarda la tesis defendida', await p.evaluate(() => S.aka.archive.length === 1 && S.aka.archive[0].summary.length > 80));
+    check('el estudio cuenta para el Gran Maestro', await p.evaluate(() => gmReqs().some((r) => r[0].includes('estudio'))));
     check('sin errores (tema Favonius)', p.errors.length === 0, p.errors.join(' | '));
     await p.context().close();
   }

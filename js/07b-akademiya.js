@@ -20,6 +20,12 @@ const DARSHANS = {
       'Aprendé 20 palabras nuevas de otro idioma.',
       'Escribí un texto de 300 palabras sobre algo que te interese.',
       'Leé un artículo y anotá 3 ideas con las que no estés de acuerdo.',
+      'Traducí un párrafo de otro idioma y compará tu versión con una traducción profesional.',
+      'Escribí una carta a mano a alguien.',
+      'Leé un poema dos veces y explicá qué cambió en la segunda lectura.',
+      'Mirá una película o serie en otro idioma con subtítulos en ese idioma.',
+      'Buscá el origen de 5 palabras que uses todos los días.',
+      'Corregí un texto tuyo viejo como si fueras su editor.',
     ],
   },
   kshahrewar: {
@@ -36,6 +42,12 @@ const DARSHANS = {
       'Terminá un mini proyecto que tengas empezado.',
       'Dibujá el plano o diagrama de algo que quieras crear.',
       'Desarmá cómo funciona un objeto cotidiano y explicalo.',
+      'Rediseñá un espacio de tu casa en papel para que sea más cómodo.',
+      'Arreglá algo roto en lugar de reemplazarlo.',
+      'Aprendé un atajo o herramienta nueva de tu programa o software favorito.',
+      'Mirá un video sobre una obra de arquitectura famosa y anotá 3 decisiones de diseño.',
+      'Hacé una lista de 10 problemas cotidianos que podrías resolver diseñando algo.',
+      'Construí una maqueta simple con lo que tengas en casa.',
     ],
   },
   amurta: {
@@ -52,6 +64,12 @@ const DARSHANS = {
       'Investigá un tema de salud y aplicá un cambio concreto esta semana.',
       'Observá una planta o animal durante 15 minutos y anotá lo que notes.',
       'Leé sobre cómo funciona un órgano del cuerpo y explicalo con tus palabras.',
+      'Cociná una comida balanceada y anotá sus nutrientes principales.',
+      'Investigá qué pasa en el cuerpo cuando dormís mal.',
+      'Aprendé a reconocer 5 plantas o árboles de tu zona.',
+      'Llevá registro de tu hidratación 3 días seguidos.',
+      'Leé sobre un hongo o microorganismo curioso y contáselo a alguien.',
+      'Aprendé primeros auxilios básicos: qué hacer ante una quemadura o un corte.',
     ],
   },
   rtawahist: {
@@ -68,6 +86,12 @@ const DARSHANS = {
       'Explicá un concepto difícil como si se lo contaras a un chico.',
       'Observá el cielo nocturno 15 minutos e identificá algo.',
       'Encontrá el error en una demostración o razonamiento.',
+      'Resolvé un acertijo de lógica sin mirar la solución.',
+      'Calculá cuánto gastás por mes en algo cotidiano y proyectalo a un año.',
+      'Aprendé a ubicar una constelación en el cielo.',
+      'Estudiá una fórmula y explicá de dónde sale.',
+      'Jugá una partida de ajedrez o un juego de estrategia y analizá un error tuyo.',
+      'Hacé un gráfico con datos de tu propio entrenamiento.',
     ],
   },
   spantamad: {
@@ -84,6 +108,12 @@ const DARSHANS = {
       'Repasá un tema con 10 ejercicios.',
       'Buscá la ciencia detrás de algo que hacés todos los días.',
       'Hacé un experimento casero seguro y anotá el resultado.',
+      'Investigá cómo funciona la energía que usás en tu casa.',
+      'Explicá por qué el cielo es celeste.',
+      'Aprendé qué pasa químicamente cuando cocinás algo (por ejemplo, el pan).',
+      'Leé sobre un científico o científica y su descubrimiento más importante.',
+      'Medí algo de tu entorno durante una semana (temperatura, ruido, luz) y sacá conclusiones.',
+      'Resolvé 5 problemas de física aplicados a tu entrenamiento.',
     ],
   },
   vahumana: {
@@ -100,6 +130,12 @@ const DARSHANS = {
       'Debatí una idea con alguien y anotá su mejor argumento.',
       'Leé un texto filosófico corto y explicá con qué no estás de acuerdo.',
       'Investigá el origen de una costumbre de tu país.',
+      'Preguntale a una persona mayor cómo era su vida a tu edad.',
+      'Leé sobre una civilización antigua y anotá algo que todavía usemos.',
+      'Escribí qué harías distinto si vivieras hace 200 años.',
+      'Visitá un museo, un monumento o un lugar histórico de tu ciudad.',
+      'Leé dos noticias del mismo hecho en medios distintos y compará.',
+      'Escribí un párrafo defendiendo una postura que no compartís.',
     ],
   },
 };
@@ -108,11 +144,15 @@ const BEGINNER_SEMINARS = [
   'Armá un horario de estudio para esta semana.',
   'Elegí un tema para aprender este mes y anotá por qué.',
   'Estudiá 3 días seguidos al menos 20 minutos.',
+  'Prepará tu lugar de estudio: ordenado, con buena luz y sin distracciones.',
+  'Probá una sesión 25 / 5 y anotá cómo te sentiste.',
 ];
 const HARD_SEMINARS = [
   'Estudiá 4 horas en total esta semana sin redes sociales mientras lo hacés.',
   'Escribí un ensayo de 800 palabras defendiendo una postura.',
   'Enseñale a alguien un tema completo de tu área.',
+  'Leé un libro corto completo esta semana.',
+  'Estudiá al menos 30 minutos todos los días de esta semana.',
 ];
 const CYNO_JOKES = [
   '¿Sabés por qué los libros nunca tienen frío? Porque tienen tapas.',
@@ -236,6 +276,7 @@ function completeSeminar() {
   const a = aka();
   if (!a.sem || a.sem.done) return;
   a.sem.done = true;
+  a.semDone = (a.semDone || 0) + 1;
   const k = a.sem.hard ? 2 : 1;
   addCredits(60 * k);
   gainProto(80 * k);
@@ -273,6 +314,7 @@ function defendThesis() {
   if (!t || t.defended || !t.steps.every((x) => x.done) || summary.length < 80) return;
   t.defended = true; t.summary = summary;
   a.theses = (a.theses || 0) + 1;
+  archiveThesis(t, a.darshan);
   addCredits(300);
   gainProto(160);
   const xp = gainXP(400, 'study');
@@ -307,6 +349,51 @@ function akaChecks() {
   }
 }
 
+// ---- Nahida: one letter per week (original text) ----
+const NAHIDA_LETTERS = [
+  'Aprender no es llenar un recipiente, es encender una lámpara. Cuidá esa luz esta semana.',
+  'Cuando algo no te salga, preguntate qué te está enseñando. A veces la respuesta es más interesante que el éxito.',
+  'Descansar también es parte de estudiar. Los sueños ordenan lo que aprendiste durante el día.',
+  'No compares tu camino con el de otros. Cada árbol crece a su propio ritmo.',
+  'Si una pregunta te persigue, no huyas. Seguila: suele llevar a lugares hermosos.',
+  'Enseñarle algo a otra persona es la mejor forma de descubrir si realmente lo entendiste.',
+  'La curiosidad es como una semilla: con un poco de constancia, se vuelve un bosque.',
+  'Esta semana, intentá aprender algo solo porque te da curiosidad, sin pensar si sirve.',
+];
+
+function readNahida() {
+  const a = aka();
+  if (a.nahida === weekStart()) return;
+  a.nahida = weekStart();
+  addCredits(20);
+  notify('Akademiya', '"Gracias por leerme."\n— Nahida\n\nCréditos +20');
+  save(); render();
+}
+
+// ---- Dori's credit shop ----
+const CREDIT_SHOP = [
+  ['capsule', '🧠 Cápsula de Conocimiento', 'Tu próxima sesión rinde el doble.', 80, () => addItem('capsule')],
+  ['box', '🎁 Cofre de Mondstadt', 'Un objeto al azar.', 120, () => addItem('box')],
+  ['key', '🗝️ Llave de Dominio', 'Abre un dominio.', 150, () => addItem('key')],
+  ['primo', '💎 160 Protogemas', 'Un deseo.', 250, () => { S.gear.primos += 160; }],
+  ['stone', '📜 Sello de la Orden', '+1 punto de habilidad.', 400, () => addItem('stone')],
+];
+
+function buyWithCredits(id) {
+  const it = CREDIT_SHOP.find((x) => x[0] === id), a = aka();
+  if (!it || a.credits < it[3]) return;
+  a.credits -= it[3];
+  it[4]();
+  notify('Dori', `"¡Un placer hacer negocios con vos! Volvé cuando tengas más créditos~"\n— Dori\n\nCompraste: <b>${it[1]}</b>`);
+  save(); render();
+}
+
+function archiveThesis(t, darshan) {
+  const a = aka();
+  a.archive = a.archive || [];
+  if (!a.archive.some((x) => x.month === t.month)) a.archive.unshift({ month: t.month, topic: t.topic, summary: t.summary || '', darshan, steps: t.steps.map((x) => x.text) });
+}
+
 // ---- views ----
 function viewRoutinesTabs(trainingHtml) {
   if (!akaOn()) return trainingHtml;
@@ -324,6 +411,7 @@ function viewStudy() {
     </div>`;
   }
   ensureSeminar();
+  if (a.thesis && a.thesis.defended) archiveThesis(a.thesis, a.darshan);
   const d = DARSHANS[a.darshan], s = studySession, sem = a.sem, t = a.thesis && a.thesis.month === monthKey() ? a.thesis : null;
   const letter = d.letters[seed(today()) % d.letters.length];
   const nextRank = ACADEMIC_RANKS.find(([h]) => studyHours() < h);
@@ -331,6 +419,10 @@ function viewStudy() {
   return `<div class="win"><div class="win-title">Carta de ${d.mentor}</div>
       <p style="font-style:italic;margin-top:0">"${letter}"</p>
       <p class="muted" style="text-align:right;margin:0">— ${d.mentor}, Darshan ${d.name}</p></div>
+    <div class="win"><div class="win-title">Carta de Nahida</div>
+      <p style="font-style:italic;margin-top:0">"${NAHIDA_LETTERS[seed(weekStart()) % NAHIDA_LETTERS.length]}"</p>
+      <div class="row"><span class="muted" style="font-size:13px">Una nueva cada lunes</span>
+        ${a.nahida === weekStart() ? '<span class="check">✔</span>' : '<button class="btn small" id="nahidaRead">Leída · +20 créditos</button>'}</div></div>
     <div class="win"><div class="win-title">Sesión de Estudio</div>
       <div class="row"><span class="label">Hoy</span><b>${studiedToday()} / ${a.goal || '—'} min</b></div>
       ${a.goal ? bar('', Math.min(studiedToday(), a.goal), a.goal) : ''}
@@ -359,6 +451,16 @@ function viewStudy() {
           ${t.steps.every((x) => x.done) ? `<textarea id="thSummary" rows="4" maxlength="1500" placeholder="Resumí qué aprendiste (mínimo 80 caracteres)"></textarea>
             <button class="btn block" id="thDefend">Defender ante Nahida</button>` : '<p class="muted" style="font-size:13px">Completá los 4 avances para defenderla.</p>'}`}
     </div>
+    ${fold('dori', `${a.credits.toLocaleString('es')} créditos`, `<div class="win"><div class="win-title">Tienda de Dori</div>
+      <p class="muted" style="margin-top:0;font-size:14px">"¿Créditos académicos? ¡Claro que los acepto! Todo tiene precio~"</p>
+      ${CREDIT_SHOP.map(([id, name, desc, cost]) => `<div class="item"><div class="info"><b>${name}</b><div class="desc">${desc}</div></div>
+        <button class="btn small" data-cbuy="${id}" ${a.credits < cost ? 'disabled' : ''}>${cost} cr</button></div>`).join('')}
+    </div>`)}
+    ${(a.archive || []).length ? fold('archive', `${a.archive.length} tesis`, `<div class="win"><div class="win-title">Archivo de Tesis</div>
+      ${a.archive.map((x) => `<details style="padding:6px 0;border-bottom:1px dashed rgba(143,207,90,.3)"><summary><b>${esc(x.topic)}</b> <span class="muted" style="font-size:13px">${x.month} · ${DARSHANS[x.darshan] ? DARSHANS[x.darshan].name : ''}</span></summary>
+        <p style="font-size:14px;white-space:pre-line">${esc(x.summary)}</p>
+        <div class="muted" style="font-size:13px">Avances: ${x.steps.map(esc).join(' · ')}</div></details>`).join('')}
+    </div>`) : ''}
     <div class="win"><div class="win-title">Expediente</div>
       <div class="row"><span>Darshan</span><b>${d.name}</b></div>
       <div class="row"><span>Rango académico</span><b class="gold">${academicRank()}</b></div>

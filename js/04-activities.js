@@ -144,14 +144,20 @@ const ACHIEVEMENTS = [
   ['side', 'Misiones secundarias completadas', () => S.sideDone || 0, [10, 50, 150, 500]],
   ['weight', 'Registros de peso', () => S.weights.length, [5, 20, 50, 100]],
   ['journal', 'Entradas de diario', () => Object.values(S.journal || {}).filter((j) => j.text).length, [1, 7, 30, 100, 365]],
+  ['studyh', 'Horas de estudio', () => Math.floor(S.aka ? S.aka.mins / 60 : 0), [1, 10, 50, 100, 250], 'varka'],
+  ['theses', 'Tesis defendidas', () => (S.aka ? S.aka.theses || 0 : 0), [1, 3, 6, 12], 'varka'],
+  ['seminars', 'Seminarios completados', () => (S.aka ? S.aka.semDone || 0 : 0), [1, 5, 15, 40], 'varka'],
 ];
 const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
 const achReward = (i) => `${100 * (i + 1)} de oro${i >= 2 ? ' · Caja Aleatoria' : ''}${i >= 3 ? ' · +1 punto de habilidad' : ''}`;
 
+// Some achievements only exist in the Favonius theme.
+const visibleAch = () => ACHIEVEMENTS.filter((x) => !x[4] || S.theme === 'varka');
+
 function checkAchievements() {
   if (!S.awakened || !S.profile) return;
   S.ach = S.ach || {};
-  for (const [id, name, fn, tiers] of ACHIEVEMENTS) {
+  for (const [id, name, fn, tiers] of visibleAch()) {
     let got = S.ach[id] || 0;
     const v = fn();
     while (got < tiers.length && v >= tiers[got]) {
@@ -173,7 +179,7 @@ function checkAchievements() {
 
 function viewAchievements() {
   return `<div class="win"><div class="win-title">Logros</div>
-    ${ACHIEVEMENTS.map(([id, name, fn, tiers]) => {
+    ${visibleAch().map(([id, name, fn, tiers]) => {
       const got = (S.ach || {})[id] || 0, v = fn();
       const done = got >= tiers.length;
       const next = tiers[Math.min(got, tiers.length - 1)];

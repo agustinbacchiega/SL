@@ -45,6 +45,7 @@ document.addEventListener('click', (ev) => {
   if (d.inv) { invTab = d.inv; render(); return; }
   if (d.rtab) { routTab = d.rtab; render(); return; }
   if (d.darshan) return enroll(d.darshan);
+  if (d.cbuy) return buyWithCredits(d.cbuy);
   if (d.thstep) return thesisStep(Number(d.thstep));
   if (d.guide) return startGuide(d.guide);
   if (d.gmstep) return gmStepDone(Number(d.gmstep));
@@ -102,6 +103,7 @@ document.addEventListener('click', (ev) => {
     case 'studyFree': return startStudy('free');
     case 'studyStop': return stopStudy();
     case 'semDone': return completeSeminar();
+    case 'nahidaRead': return readNahida();
     case 'thPropose': return proposeThesis();
     case 'thDefend': return defendThesis();
     case 'wreqDone': return completeWeeklyRequest();
