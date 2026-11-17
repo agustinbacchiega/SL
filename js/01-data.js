@@ -442,6 +442,7 @@ const VARKA = [
   ['Mazmorra despejada', 'Dominio superado'],
   ['Mazmorra de rango', 'Dominio de rango'],
   ['una mazmorra', 'un dominio'], ['la mazmorra', 'el dominio'], ['La mazmorra', 'El dominio'],
+  ['las mazmorras raras', 'los dominios raros'], ['mazmorras raras', 'dominios raros'],
   ['mazmorras', 'dominios'], ['mazmorra', 'dominio'], ['Mazmorra', 'Dominio'],
   ['Castillo del Demonio', 'Templo del Lobo del Norte'],
   ['Dominio de rango E', 'Dominio del Bosque Susurrante'],
